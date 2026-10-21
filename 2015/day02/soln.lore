@@ -1,0 +1,65 @@
+using print, println from std.io as io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+
+const DATA_FILE :string = "2015/day02/data.txt";
+
+class Solver then
+    func load_data (filename_ :string) list then
+        var _path_ :string = '/'.join([os.cwd(), filename_]);
+        var _content_ :string = file.read_to_string(_path_);
+        var _rows_ :list = _content_.split('\n');
+        _rows_.pop();
+        return _rows_;
+    end
+
+    func puzzle1(data_ :list) void then
+        var _time_start_ :float = time.now();
+
+        var _sum_ :int = 0;
+        for _Row__ in data_ then
+            var _dims_ :list = _Row__.split('x');
+            var l: int = _dims_[0].to_int();
+            var w: int = _dims_[1].to_int();
+            var h: int = _dims_[2].to_int();
+
+            _sum_ += 2*l*w + 2*w*h + 2*h*l + [l*w, w*h, h*l].reduce(math.min);
+        end
+
+        io.println("part 1: {}, time: {}".format(_sum_, time.now() - _time_start_));
+    end
+
+    func puzzle2(data_ :list) void then
+        var _time_start_ :float = time.now();
+
+        var _sum_ :int = 0;
+        for _Row__ in data_ then
+            var _dims_ :list = _Row__.split('x');
+            var l: int = _dims_[0].to_int();
+            var w: int = _dims_[1].to_int();
+            var h: int = _dims_[2].to_int();
+            var _per_ = [2*l+2*w, 2*w+2*h, 2*h+2*l].reduce(math.min);
+            var _bow_ = l*w*h;
+
+            _sum_ += _per_ + _bow_;
+        end
+
+        io.println("part 2: {}, time: {}".format(_sum_, time.now() - _time_start_));
+    end
+end
+
+func main() void then
+    io.println("Hello, Day 2!\n");
+
+    var solver = Solver();
+    var data :string = solver.load_data(DATA_FILE);
+
+    solver.puzzle1(data);
+    solver.puzzle2(data);
+
+    io.println("\nfin");
+end
+
+main();

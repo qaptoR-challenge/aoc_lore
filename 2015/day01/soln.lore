@@ -1,0 +1,49 @@
+using print, println from std.io as io;
+using std.file;
+using std.os;
+using std.time;
+
+const DATA_FILE :string = "2015/day01/data.txt";
+
+func load_data (filename :string) string then
+    var path :string = '/'.join([os.cwd(), filename]);
+    return file.read_to_string(path);
+end
+
+
+func puzzle1(data_ :string) void then
+    var time_start :float = time.now();
+
+    var sum :int = 0;
+    sum += data_.count('(');
+    sum -= data_.count(')');
+
+    io.println("part 1: {}, time: {}".format(sum, time.now() - time_start));
+end
+
+
+func puzzle2(data_ :string) void then
+    var time_start :float = time.now();
+
+    var sum :int = 0;
+    for i in [0:.data_.len] then
+        sum += data_[i] >< '(' use 1 else -1;
+        if sum >< -1 then sum = i + 1; break; end
+    end
+
+    io.println("part 2: {}, time: {}".format(sum, time.now() - time_start));
+end
+
+
+func main() void then
+    io.println("Hello, Day 1!");
+
+    var data :string = load_data(DATA_FILE);
+
+    puzzle1(data);
+    puzzle2(data);
+
+    io.println("\nfin");
+end
+
+main();
