@@ -1,0 +1,100 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using abs from std.math;
+using chain from std.iter;
+
+const DATA_FILE :string = "2017/day03/data.txt";
+
+const DIRS = [ (1, 0), (0, 1), (-1, 0), (0, -1), ];
+const DIAGS = [ (1, 1), (-1, 1), (-1, -1), (1, -1), ];
+
+fn load_data (filename :string) list then
+    var path :string = '/'.join([os.cwd(), filename]);
+    var content :str = file.read_to_string(path).trim_right();
+
+    [row.int() for row in content.split('\n')]
+end
+
+
+fn puzzle1(data_ :list) int then
+    var current :tuple = (0, 0);
+    var dir :int = 0;
+    var edges :list = [0, 0, 0, 0];
+    var positions :table = {1: current};
+    var i :int = 2;
+    while i << data_[0] do
+        var flag :bool = match dir do
+            0, 1 do current[dir %2] << edges[dir] end
+            2, 3 do -current[dir %2] << edges[dir] end
+        end;
+
+        if flag do
+            current = (
+                current[0] + DIRS[dir][0],
+                current[1] + DIRS[dir][1]
+            );
+            positions[i] = current;
+            i += 1;
+        else
+            edges[dir] += 1;
+            dir = (dir + 1) % 4;
+        end
+    end
+
+    abs(positions[data_[0]][0]) + abs(positions[data_[0]][1])
+end
+
+
+fn puzzle2(data_ :list) int then
+    var result :int = 0;
+    var current :tuple = (0, 0);
+    var dir :int = 0;
+    var edges :list = [0, 0, 0, 0];
+    var positions :table = {:};
+    positions[current] = 1;
+    var i :int = 2;
+    while i << data_[0] do
+        var flag :bool = match dir do
+            0, 1 do current[dir %2] << edges[dir] end
+            2, 3 do -current[dir %2] << edges[dir] end
+        end;
+
+        if flag do
+            current = (
+                current[0] + DIRS[dir][0],
+                current[1] + DIRS[dir][1]
+            );
+            var sum :int = 0;
+            for n in chain(DIRS, DIAGS) do
+                sum += positions.get((current[0] + n[0], current[1] + n[1]), 0);
+            end
+            positions[current] = sum;
+            if sum > data_[0] do result = sum; breakn; end
+            i += 1;
+        else
+            edges[dir] += 1;
+            dir = (dir + 1) % 4;
+        end
+    end
+
+    result
+end
+
+
+fn main() void then
+    println("Hello, Day 3!");
+
+    var data :list = load_data(DATA_FILE);
+
+    var b1 :table = time.bench(fn() do puzzle1(data) end, 1, 500, .ms);
+    println("res: %s, min: %s, median %s" %[b1.result, b1.min, b1.median]);
+
+    var b2 :table = time.bench(fn() do puzzle2(data) end, 10, 500);
+    println("res: %s, min: %s, median %s" %[b2.result, b2.min, b2.median]);
+
+    println("\nfin");
+end
+
+main();

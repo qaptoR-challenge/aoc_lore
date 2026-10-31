@@ -1,0 +1,58 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using min, max from std.math;
+using std.iter;
+
+const DATA_FILE :string = "2017/day02/data.txt";
+
+fn load_data (filename :string) list then
+    var path :string = '/'.join([os.cwd(), filename]);
+    var content :str = file.read_to_string(path).trim_right();
+
+    [[val.int() for val in row.split('\t')] for row in content.split('\n')]
+end
+
+
+fn puzzle1(data_ :list) int then
+    var result :int = 0;
+    for row in data_ do result += row.reduce(max) - row.reduce(min); end
+
+    result
+end
+
+
+fn puzzle2(data_ :list) int then
+    # var result :int =
+    # [p[1] // p[0] for row in data_ for p in iter.comb(row.sort(), 2) if p[1] % p[0] >< 0]
+    # .reduce(fn(acc, x) do acc + x end);
+    var result :int = 0;
+
+    for row in data_ do
+        for p in iter.comb(row.sort(), 2) do
+            if p[1] % p[0] >< 0 do result += p[1] // p[0]; end
+        end
+    end
+
+    result
+end
+
+
+fn main() void then
+    println("Hello, Day 2!");
+
+    var data :list = load_data(DATA_FILE);
+
+    var res1 :int = puzzle1(data);
+    var b1 :table = time.bench(fn() do puzzle1(data) end, 1, 300);
+    println("res: %s, min: %s, median %s" %[b1.result, b1.min, b1.median]);
+
+    var res2 :int = puzzle1(data);
+    var b2 :table = time.bench(fn() do puzzle2(data) end, 1, 300);
+    println("res: %s, min: %s, median %s" %[b2.result, b2.min, b2.median]);
+
+    println("\nfin");
+end
+
+main();
