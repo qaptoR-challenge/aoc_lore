@@ -1,0 +1,66 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using md5 from std.hash;
+
+class Solver then
+
+    fn puzzle1() str then
+
+        var salt :str = "abbhdwsy";
+        var result :str = "";
+
+        var i :int = 0;
+        while result.len < 8 do
+            var new_hash :str = md5(salt + i as str);
+            if new_hash.starts_with("00000") do result += new_hash[5]; end
+            i += 1;
+        end
+
+        result
+    end
+
+    fn puzzle2() str then
+        var salt :str = "abbhdwsy";
+        var result :str = "--------";
+
+        var i :int = -1;
+        var positions :list = [[0::7]];
+        while result.find('-') <> -1 do
+            i += 1;
+            var new_hash :str = md5(salt + i as str);
+            if new_hash.starts_with("00000") do
+                if pos :int = new_hash[5].to_int() do
+                   if not positions.has(pos) do continue; end
+                    positions.erase(pos);
+                    result = result[0:.pos] + new_hash[6] + result[pos,;-1];
+                end
+            end
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 05!\n");
+
+    var solver = Solver();
+
+    var res1 :str = solver.puzzle1();
+    var t1 :table = time.bench(fn() then solver.puzzle1(); end, 1, 300);
+    println("part 1: {}, min: {} us, median: {} us".format(
+        res1, t1.min //1000, t1.median //1000
+    ));
+
+    var res2 :str = solver.puzzle2();
+    var t2 :table = time.bench(fn() then solver.puzzle2(); end, 1, 300);
+    println("part 2: {}, min: {} us, median: {} us".format(
+        res2, t2.min //1000, t2.median //1000
+    ));
+
+    println("\nfin");
+end
+
+main();

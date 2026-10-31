@@ -1,0 +1,100 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using abs from std.math;
+
+const DATA_FILE :string = "2016/day01/data.txt";
+const DIRS :table = { UP: 0, RIGHT: 1, DOWN: 2, LEFT: 3 };
+const dirs :list = [
+    (0, 1),
+    (1, 0),
+    (0, -1),
+    (-1, 0),
+];
+
+class Solver then
+
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim();
+
+        content.split(", ")
+    end
+
+    fn puzzle1(data_ :list) int then
+        var direction :int = 0;
+        var position :tuple = (0, 0);
+
+        for move in data_ do
+            var dir :str = move[0];
+            var dist :int = move[1:.move.len].to_int();
+
+            direction = match dir do
+                'R' do (direction +1) % dirs.len end
+                'L' do (direction -1) % dirs.len end
+            end;
+
+            for i in [0:.dist] do
+                position = (
+                    position[0] + dirs[direction][0],
+                    position[1] + dirs[direction][1]
+                );
+            end
+        end
+
+        abs(position[0]) + abs(position[1])
+    end
+
+    fn puzzle2(data_ :list) int then
+        var direction :int = 0;
+        var position :tuple = (0, 0);
+        var visited :table = {:};
+        visited.reserve(600);
+        visited[position] = true;
+
+        for move in data_ do
+            var dir :str = move[0];
+            var dist :int = move[1:.move.len].to_int();
+
+            direction = match dir do
+                'R' do (direction +1) % dirs.len end
+                'L' do (direction -1) % dirs.len end
+            end;
+
+            var flag :bool = false;
+            final for i in [0:.dist] do
+                position = (
+                    position[0] + dirs[direction][0],
+                    position[1] + dirs[direction][1]
+                );
+                if visited.get(position, false) do
+                    flag = true;
+                    break final;
+                else visited[position] = true; end
+            end
+            if flag do break; end
+        end
+
+        abs(position[0]) + abs(position[1])
+    end
+end
+
+fn main() void then
+    println("Hello, Day 01!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    println("part 1: {}, min: {} us, median: {} us".format(res1, t1["min"], t1["median"]));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    println("part 2: {}, min: {} us, median: {} us".format(res2, t2["min"], t2["median"]));
+
+    println("\nfin");
+end
+
+main();

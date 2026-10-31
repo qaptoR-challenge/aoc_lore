@@ -1,0 +1,16 @@
+using print, println from std.io;
+using std.regex as re;
+
+var test :str = "yuiopabbajkmnxxxxasdf";
+var rems :list = re.find_all(`((\w)((?!\2)\w)\3\2)`, test);
+var test2 :str = "yxyxy";
+var rems2 :list =re.find_all(`(?=(\w)(?!\1)(\w)\1)`, test2);
+
+for rem in rems2 do
+    print(rem.groups, " ");
+    println();
+end
+
+# for rem in rems do
+#     println(rem.groups[0]);
+# end

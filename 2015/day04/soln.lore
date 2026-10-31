@@ -1,0 +1,64 @@
+using print, println from std.io as io;
+using std.file;
+using std.os;
+using std.time;
+using md5 from std.hash;
+
+const DATA_FILE :string = "2015/day04/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) string then
+        var _path_ :string = '/'.join([os.cwd(), filename_]);
+        return file.read_to_string(_path_).trim();
+    end
+
+    fn puzzle1(data_ :string) int then
+        var _num_ :int = 1;
+        var _seed_ :string = data_;
+        while true then
+            var _salt_ :string = _seed_ + _num_ as string;
+            var mdfive :string = md5(_salt_);
+            var substr :string = mdfive[0:.5];
+
+            if substr.count('0') >< 5 then break; end
+
+            _num_ += 1;
+        end
+
+        _num_
+    end
+
+    fn puzzle2(data_ :string) int then
+        var _num_ :int = 1;
+        var _seed_ :string = data_;
+        while true then
+            var _salt_ :string = _seed_ + _num_ as string;
+            var mdfive :string = md5(_salt_);
+            var substr :string = mdfive[0:.6];
+
+            if substr.count('0') >< 6 then break; end
+            _num_ += 1;
+        end
+
+        _num_
+    end
+end
+
+fn main() void then
+    io.println("Hello, Day 4!\n");
+
+    var solver = Solver();
+    var data :string = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    io.println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    io.println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    io.println("\nfin");
+end
+
+main();

@@ -1,0 +1,62 @@
+using print, println from std.io as io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+
+const DATA_FILE :string = "2015/day05/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :string = '/'.join([os.cwd(), filename_]);
+        var _content_ :string = file.read_to_string(_path_).trim();
+        return _content_.split('\n');
+    end
+
+    fn puzzle1(data_ :list) int then
+        var _sum_ :int = 0;
+        for row in data_ then
+            var v :list = re.find_all(`[aeiou]`, row);
+            var b :bool = re.test(`ab|cd|pq|xy`, row);
+            var d :bool = re.test(`(.)\1`, row);
+
+            if v.len < 3 ior b ior not d then continue; end
+            _sum_ += 1;
+        end
+
+        _sum_
+    end
+
+    fn puzzle2(data_ :list) int then
+        var _sum_ :int = 0;
+        for row in data_ then
+            var d :bool = re.test(`(..).*\1`, row);
+            var s :bool = re.test(`(.).\1`, row);
+
+            if not d ior not s then continue; end
+            _sum_ += 1;
+        end
+
+        _sum_
+    end
+end
+
+fn main() void then
+    io.println("Hello, Day 5!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    io.println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    io.println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    io.println("\nfin");
+end
+
+main();

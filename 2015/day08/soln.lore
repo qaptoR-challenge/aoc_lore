@@ -1,0 +1,73 @@
+using print, println from std.io as io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+
+const DATA_FILE :string = "2015/day08/data.txt";
+
+class Solver then
+
+    fn load_data (filename_ :string) list then
+        var _path_ :string = '/'.join([os.cwd(), filename_]);
+        var _content_ :string = file.read_to_string(_path_).trim();
+        return _content_.split('\n');
+    end
+
+    fn puzzle1(data_ :list) int then
+        var _result_ :int = 0;
+        for row in data_ do
+            var memlen :int = row.len -2;
+            var hexes :list = re.find_all(`\\x[0-9a-f]{2}`, row);
+            var esces :list = re.find_all(`\\"|\\\\`, row);
+            memlen -= 3 * hexes.len;
+            memlen -= esces.len;
+
+            _result_ += row.len - memlen;
+        end
+
+        _result_
+    end
+
+    fn puzzle2(data_ :list) int then
+        var c_escape :function = fn(str_ :str) do
+            var escaped :str = "";
+            for c in str_ do
+                escaped += match c then
+                    '"' do `\"` end
+                    '\\' do `\\` end
+                    _ do c end
+                end;
+            end
+            escaped
+        end;
+
+        var _result_ :int = 0;
+        for row in data_ do
+            var esclen :int = c_escape(row).len +2;
+            _result_ += esclen - row.len;
+        end
+
+        _result_
+    end
+end
+
+fn main() void then
+    io.println("Hello, Day 8!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    io.println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    io.println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    io.println("\nfin");
+end
+
+main();

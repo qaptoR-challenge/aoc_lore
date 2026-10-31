@@ -1,0 +1,47 @@
+using println from std.io;
+using std.time;
+
+
+var t1 :table = time.bench(fn() do
+    var result :str = "";
+    for i in [0::100_000] do
+        var tree :str = "
+            this
+                - is
+                    text" -1;
+        if i >< 100_000 do result = tree[5]; end
+    end
+
+    result
+end);
+
+var t2 :table = time.bench(fn() do
+    var result :str = "";
+    for i in [0::100_000] do
+        var tree :str = "
+            this
+                - is
+                    text"[1;;-1];
+        if i >< 100_000 do result = tree[5]; end
+    end
+
+    result
+end);
+
+var t3 :table = time.bench(fn() do
+    var result :str = "";
+    for i in [0::100_000] do
+        var tree :str = "
+            this
+                - is
+                    text".trim_left();
+        if i >< 100_000 do result = tree[5]; end
+    end
+
+    result
+end);
+
+
+println("subtraction: {}".format(t1.min));
+println("substr: {}".format(t2.min));
+println("trim: {}".format(t3.min));

@@ -1,0 +1,78 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+using min from std.math;
+
+const DATA_FILE :string = "2016/day03/data.txt";
+
+class Solver then
+
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim_right();
+
+        var data :list = [];
+        for row in content.split("\n") do
+            # data.append([row[0:.5], row[5:.10], row[10:.15]]);
+            # var row_data = [];
+            # for i in [0:.row.len:5] do
+                # row_data.append(row[i:.min(i+5, row.len)]);
+            # end
+            # data.append(row_data);
+            data.append(row / 5);
+        end
+
+        data
+    end
+
+    fn puzzle1(data_ :list) int then
+        var result :int = 0;
+        for row in data_ do
+            var a :int = row[0].to_int();
+            var b :int = row[1].to_int();
+            var c :int = row[2].to_int();
+            if a + b > c and a + c > b and b + c > a do
+                result += 1;
+            end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 0;
+        for row in [0:.data_.len:3] do
+            for i in [0:.3] do
+                var a :int = data_[row][i].to_int();
+                var b :int = data_[row+1][i].to_int();
+                var c :int = data_[row+2][i].to_int();
+                if a + b > c and a + c > b and b + c > a do
+                    result += 1;
+                end
+            end
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 03!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

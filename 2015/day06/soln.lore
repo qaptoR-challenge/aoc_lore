@@ -1,0 +1,99 @@
+using print, println from std.io as io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+using std.coll;
+using std.math;
+
+
+const DATA_FILE :string = "2015/day06/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :string = '/'.join([os.cwd(), filename_]);
+        var _content_ :string = file.read_to_string(_path_).trim();
+        return _content_.split('\n');
+    end
+
+    fn puzzle1(data_ :list) int then
+        var lights :array = coll.array(1_000);
+        for i in [0:.1_000] then
+            lights[i] = coll.array(1_000, false);
+        end
+        for row in data_ then
+            var rect :list = re.find_all(`(\d{1,3}),(\d{1,3})`, row);
+            var instruct :string = re.find(`(turn on|turn off|toggle)`, row).text;
+
+            var tl :list = rect[0].text.split(',');
+            var br :list = rect[1].text.split(',');
+
+            for x in [tl[0].to_int()::br[0].to_int()] then
+                for y in [tl[1].to_int()::br[1].to_int()] then
+                    lights[x][y] = match instruct then
+                        "turn on" do true end
+                        "turn off" do false end
+                        "toggle" do not lights[x][y] end
+                    end;
+                end
+            end
+        end
+
+        var _sum_ :int = 0;
+        for row in lights then
+            _sum_ += row.reduce(fn(a, e) then a + (e use 1 else 0) end, 0);
+        end
+
+        _sum_
+    end
+
+    fn puzzle2(data_ :list) int then
+        var lights :array = coll.array(1_000);
+        for i in [0:.1_000] then
+            lights[i] = coll.array(1_000, 0);
+        end
+        for row in data_ then
+            var rect :list = re.find_all(`(\d{1,3}),(\d{1,3})`, row);
+            var instruct :string = re.find(`(turn on|turn off|toggle)`, row).text;
+
+            var tl :list = rect[0].text.split(',');
+            var br :list = rect[1].text.split(',');
+
+            for x in [tl[0].to_int()::br[0].to_int()] then
+                for y in [tl[1].to_int()::br[1].to_int()] then
+                    lights[x][y] = match instruct then
+                        "turn on" do lights[x][y] + 1 end
+                        "turn off" do math.max(0, lights[x][y] - 1) end
+                        "toggle" do lights[x][y] + 2 end
+                    end;
+                end
+            end
+        end
+
+        var _sum_ :int = 0;
+        for row in lights then
+            _sum_ += row.reduce(fn(a, e) then a + e end, 0);
+        end
+
+        _sum_
+    end
+end
+
+fn main() void then
+    io.println("Hello, Day 6!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    io.println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    io.println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    io.println("\nfin");
+end
+
+main();

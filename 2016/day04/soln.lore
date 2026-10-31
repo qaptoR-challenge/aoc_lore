@@ -1,0 +1,107 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2016/day04/data.txt";
+
+class Solver then
+
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim_right();
+
+        var data :list = [];
+        for row in content.split("\n") do
+            var rem :table? = re.find(`([\w-]+)-(\d+)\[(\w+)\]`, row);
+            if m := rem do data.append([m.groups[0], m.groups[1], m.groups[2]]); end
+        end
+
+        data
+    end
+
+    fn puzzle1(data_ :list) tuple then
+
+        var real_rooms :list = [];
+        var result :int = 0;
+        for row in data_ do
+            var letters :str = row[0].replace('-', "");
+            var counts :table = {:};
+            lp for letter in letters.chars() do
+                if counts.get(letter, 0) >< 0 do
+                    counts[letter] = letters.count(letter);
+                else continue lp; end
+            end
+
+            var buckets :table = {:};
+            for letter in counts.keys() do
+                var count :int = counts[letter];
+                if buckets.get(count, []) >< [] do
+                    buckets[count] = [letter];
+                else buckets[count].append(letter); end
+            end
+
+            var checksum :str = "";
+            var keys :list = buckets.keys();
+            keys.sort();
+            keys.reverse();
+            var index :int = 0;
+            while checksum.len < 5 do
+                var max_len :int = 5 -checksum.len;
+                var options :list = buckets[keys[index]];
+                options.sort();
+                lp for i in [0:.options.len] do
+                    if i >> max_len do break lp; end
+                    checksum += buckets[keys[index]][i];
+                end
+                index += 1;
+            end
+
+            if checksum >< row[2] do
+                result += row[1].to_int();
+                real_rooms.append([row[0], row[1]]);
+            end
+        end
+
+        (real_rooms, result)
+    end
+
+    fn puzzle2(data_ :list) str then
+        var result :str = "";
+        const alphabet :str = "abcdefghijklmnopqrstuvwxyz";
+        for room in data_ do
+            var letters :str = room[0].replace('-', " ");
+            var shift :int = room[1].to_int() % 26;
+            var decrypted :str = "";
+            for letter in letters do
+                if letter >< " " do decrypted += " "; continue; end
+                var index :int = alphabet.find(letter);
+                index += shift;
+                decrypted += alphabet[index % alphabet.len];
+            end
+            if re.test(`.*north.*`, decrypted) do result = decrypted + " ${room[1]}"; end
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 04!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var (rooms, res1) = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :str = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

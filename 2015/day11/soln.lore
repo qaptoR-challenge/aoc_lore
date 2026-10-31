@@ -1,0 +1,91 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2015/day11/data.txt";
+
+class Solver then
+    var alphabet :str = "abcdefghijklmnopqrstuvwxyz";
+
+    fn load_data (filename_ :string) str then
+        var _path_ :string = '/'.join([os.cwd(), filename_]);
+        return file.read_to_string(_path_).trim();
+    end
+
+    fn puzzle1(data_ :str) int then
+        4
+    end
+
+    fn puzzle2(data_ :str) int then
+        4
+    end
+
+    fn get_valid_passwd(passwd_ :str) str then
+        while true do
+            passwd_ = this.next_passwd(passwd_);
+            if this.is_valid(passwd_) do breakn; end
+        end
+
+        passwd_
+    end
+
+    fn next_passwd(passwd_ :str) str then
+        var pos :int = passwd_.len -1;
+        while pos >> 0 do
+            var ch :str = passwd_[pos];
+            if ch >< "z" do
+                passwd_ = passwd_[0:.pos] + 'a' + passwd_[pos..passwd_.len];
+                pos -= 1;
+            else
+                var c = this.alphabet[this.alphabet.find(ch) +1];
+                passwd_ = passwd_[0:.pos] + c + passwd_[pos..passwd_.len];
+                breakn;
+            end
+        end
+
+        passwd_
+    end
+
+    fn is_valid(passwd_ :str) bool then
+        for ch in ['i', 'o', 'l'] do
+            if passwd_.contains(ch) do return false; end
+        end
+
+        if not re.test(`(.)\1.*(.)\2`, passwd_) do return false; end
+        if not re.test(
+            `abc|bcd|cde|def|efg|fgh|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz`,
+            passwd_
+        ) do return false; end
+
+        true
+    end
+end
+
+fn main() void then
+    println("Hello, Day 11!\n");
+
+    var solver = Solver();
+    var data :str = solver.load_data(DATA_FILE);
+
+    println(data);
+
+    var passwd :str = solver.get_valid_passwd(data);
+    println("passwd: " + passwd);
+
+    passwd = solver.get_valid_passwd(passwd);
+    println("passwd: " + passwd);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

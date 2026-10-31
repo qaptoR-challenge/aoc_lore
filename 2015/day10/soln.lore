@@ -1,0 +1,91 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+
+const DATA_FILE :string = "2015/day10/data.txt";
+
+class Solver then
+
+    fn load_data (filename_ :string) list then
+        var _path_ :string = '/'.join([os.cwd(), filename_]);
+        return file.read_to_string(_path_).trim();
+    end
+
+    fn puzzle1(data_ :str) int then
+        var data :str = this.look_and_say_str(data_, 40);
+        # var data :list = this.look_and_say_list(data_.chars(), 40);
+
+        data.len
+    end
+
+    fn puzzle2(data_ :str) int then
+        var data :str = this.look_and_say_str(data_, 50);
+        # var data :list = this.look_and_say_list(data_.chars(), 50);
+
+        data.len
+    end
+
+    fn look_and_say_str(data_ :str, iter_ :int) str do
+        var data :str = data_;
+        for _ in [0:.iter_] do
+            var new :str = "";
+            var count :int = 0;
+            var value :str = data[0];
+            for i in [0:.data.len] do
+                if data[i] >< value do
+                    count += 1;
+                else
+                    new += count as str + value;
+                    count = 1;
+                    value = data[i];
+                end
+            end
+            new += count as str + value;
+            data = new;
+        end
+
+        data
+    end
+
+    fn look_and_say_list(data_ :list, iter_ :int) list do
+        var data :list = data_.copy();
+        for _ in [0:.iter_] do
+            var new :list = [];
+            var count :int = 0;
+            var value :str = data[0];
+            for i in [0:.data.len] do
+                if data[i] >< value do
+                    count += 1;
+                else
+                    new.extend([count as str, value]);
+                    count = 1;
+                    value = data[i];
+                end
+            end
+            new.extend([count as str, value]);
+            data = new;
+        end
+
+        data
+    end
+end
+
+fn main() void then
+    println("Hello, Day 10!\n");
+
+    var solver = Solver();
+    var data :str = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

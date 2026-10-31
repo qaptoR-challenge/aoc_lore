@@ -1,0 +1,9 @@
+using println from std.io;
+
+
+
+var a :str = "1";
+var b :str = "2";
+
+println((a as int + b as int));
+

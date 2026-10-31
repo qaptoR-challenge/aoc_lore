@@ -1,0 +1,93 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using abs from std.math;
+
+const DATA_FILE :string = "2016/day02/data.txt";
+const dirs :table = {
+    'U': ( 0,  1),
+    'D': ( 0, -1),
+    'L': (-1,  0),
+    'R': ( 1,  0)
+};
+
+const buttons_1 :table = {
+    (-1,  1): '1', (0,  1): '2', (1,  1): '3',
+    (-1,  0): '4', (0,  0): '5', (1,  0): '6',
+    (-1, -1): '7', (0, -1): '8', (1, -1): '9',
+};
+
+const buttons_2 :table = {
+                                 (0,  2): '1',
+                  (-1,  1): '2', (0,  1): '3', (1,  1): '4',
+    (-2, 0): '5', (-1,  0): '6', (0,  0): '7', (1,  0): '8', (2, 0): '9',
+                  (-1, -1): 'A', (0, -1): 'B', (1, -1): 'C',
+                                 (0, -2): 'D'
+};
+
+class Solver then
+
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim();
+
+        content.split("\n")
+    end
+
+    fn puzzle1(data_ :list) int then
+
+        var pos :tuple = (0, 0);
+        var result = "";
+        for line in data_ do
+            for c in line.chars() do
+                var dir :tuple = dirs[c];
+                var new_pos :tuple = (
+                    pos[0] + dir[0],
+                    pos[1] + dir[1]
+                );
+                if buttons_1.has(new_pos) do pos = new_pos; end
+            end
+            result += buttons_1[pos];
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var pos :tuple = (0, 0);
+        var result = "";
+        for line in data_ do
+            for c in line.chars() do
+                var dir :tuple = dirs[c];
+                var new_pos :tuple = (
+                    pos[0] + dir[0],
+                    pos[1] + dir[1]
+                );
+                if buttons_2.has(new_pos) do pos = new_pos; end
+            end
+            result += buttons_2[pos];
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 02!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

@@ -1,0 +1,122 @@
+using print, println from std.io as io;
+using std.file;
+using std.os;
+using std.time;
+# using std.regex as re;
+using keys from std.coll;
+# using std.math;
+
+
+const DATA_FILE :string = "2015/day07/data.txt";
+
+class Solver then
+    var memo :table = {:};
+
+    fn load_data (filename_ :string) list then
+        var _path_ :string = '/'.join([os.cwd(), filename_]);
+        var _content_ :string = file.read_to_string(_path_).trim();
+        return _content_.split('\n');
+    end
+
+    fn puzzle1(data_ :list) int then
+        var graph :table = {:};
+        for row in data_ then
+            var parts :list = row.split(' ');
+            match parts.len then
+                3 do graph[parts[2]] = { parts[0]: true }; end
+                4 do graph[parts[3]] = { parts[0]: parts[1] }; end
+                5 do graph[parts[4]] = { parts[1]: [parts[0], parts[2]] }; end
+            end
+        end
+
+        var signale = this.rec_circuit(graph, 'a');
+        this.memo.clear();
+
+        signale
+    end
+
+    fn puzzle2(data_ :list) int then
+        var graph :table = {:};
+        for row in data_ then
+            var parts :list = row.split(' ');
+            match parts.len then
+                3 do graph[parts[2]] = { parts[0]: true }; end
+                4 do graph[parts[3]] = { parts[0]: parts[1] }; end
+                5 do graph[parts[4]] = { parts[1]: [parts[0], parts[2]] }; end
+            end
+        end
+
+        graph['b'] = { this.rec_circuit(graph, 'a') as string: true };
+        this.memo.clear();
+        var signale = this.rec_circuit(graph, 'a');
+        this.memo.clear();
+
+        signale
+    end
+
+    fn rec_circuit(graph_ :table, wire_ :string) int then
+        if this.memo.contains(wire_) then return this.memo[wire_]; end
+
+        var wire = wire_.to_int();
+        if wire <> null then
+            this.memo[wire_] = wire;
+            return wire;
+        end
+
+        var result :int = 0;
+        for key in graph_[wire_].keys() then
+            match key then
+                "AND" then
+                    var x :int = this.rec_circuit(graph_, graph_[wire_][key][0]);
+                    var y :int = this.rec_circuit(graph_, graph_[wire_][key][1]);
+                    result = x & y;
+                end
+                "OR" then
+                    var x :int = this.rec_circuit(graph_, graph_[wire_][key][0]);
+                    var y :int = this.rec_circuit(graph_, graph_[wire_][key][1]);
+                    result = x | y;
+                end
+                "LSHIFT" then
+                    var x :int = this.rec_circuit(graph_, graph_[wire_][key][0]);
+                    var y :int = this.rec_circuit(graph_, graph_[wire_][key][1]);
+                    result = x <- y;
+                end
+                "RSHIFT" then
+                    var x :int = this.rec_circuit(graph_, graph_[wire_][key][0]);
+                    var y :int = this.rec_circuit(graph_, graph_[wire_][key][1]);
+                    result = x -> y;
+                end
+                "NOT" then
+                    var x :int = this.rec_circuit(graph_, graph_[wire_][key]);
+                    result = ~x;
+                end
+                _ then
+                    var x :int = this.rec_circuit(graph_, key);
+                    result = x;
+                end
+            end
+        end
+
+        this.memo[wire_] = result;
+        return result;
+    end
+end
+
+fn main() void then
+    io.println("Hello, Day 7!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    io.println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    io.println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    io.println("\nfin");
+end
+
+main();

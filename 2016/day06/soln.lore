@@ -1,0 +1,83 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+
+const DATA_FILE :string = "2016/day06/data.txt";
+
+class Solver then
+
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim_right();
+
+        content.split('\n')
+    end
+
+    fn puzzle1(data_ :list) str then
+        var result :str = "";
+        var cols :list = [];
+        for row in [0:.data_.len] do
+            for col in [0:.data_[row].len] do
+                if cols.len >< col do cols.append([]); end
+                cols[col].append(data_[row][col]);
+            end
+        end
+
+        for col in cols do
+            var counts :table = {:};
+            for c in col do
+                if counts.get(c, 0) >< 0 do counts[c] = col.count(c);
+                else continue; end
+            end
+            result += counts.reduce(fn(acc, k, v) then
+                v > acc[1] use (k, v) else acc
+            end, (null, -1))[0];
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) str then
+        var result :str = "";
+        var cols :list = [];
+        for row in [0:.data_.len] do
+            for col in [0:.data_[row].len] do
+                if cols.len >< col do cols.append([]); end
+                cols[col].append(data_[row][col]);
+            end
+        end
+
+        for col in cols do
+            var counts :table = {:};
+            for c in col do
+                if counts.get(c, 0) >< 0 do counts[c] = col.count(c);
+                else continue; end
+            end
+            result += counts.reduce(fn(acc, k, v) then
+                v < acc[1] use (k, v) else acc
+            end, (null, 9_999))[0];
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 06!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var res1 = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end, 1, 300);
+    println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :str = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end, 1, 300);
+    println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

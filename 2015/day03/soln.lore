@@ -3,19 +3,17 @@ using std.file;
 using std.os;
 using std.time;
 using std.math;
-using keys from std.coll;
+using keys, set from std.coll;
 
 const DATA_FILE :string = "2015/day03/data.txt";
 
 class Solver then
-    func load_data (filename_ :string) string then
+    fn load_data (filename_ :string) string then
         var _path_ :string = '/'.join([os.cwd(), filename_]);
         return file.read_to_string(_path_);
     end
 
-    func puzzle1(data_ :string) void then
-        var _time_start_ :float = time.now();
-
+    fn puzzle1(data_ :string) int then
         var _posz_ :set = set();
         var _curr_ :tuple = (0, 0);
         _posz_.add(_curr_);
@@ -32,12 +30,10 @@ class Solver then
             _posz_.add(_curr_);
         end
 
-        io.println("part 1: {}, time: {}".format(_posz_.len, time.now() - _time_start_));
+        _posz_.len
     end
 
-    func puzzle2(data_ :string) void then
-        var _time_start_ :float = time.now();
-
+    fn puzzle2(data_ :string) int then
         var _posz_ :set = set();
         var _santa_ :tuple = (0, 0);
         var _robot_ :tuple = (0, 0);
@@ -65,18 +61,23 @@ class Solver then
             end
         end
 
-        io.println("part 2: {}, time: {}".format(_posz_.len, time.now() - _time_start_));
+        _posz_.len
     end
 end
 
-func main() void then
+fn main() void then
     io.println("Hello, Day 3!\n");
 
     var solver = Solver();
     var data :string = solver.load_data(DATA_FILE);
 
-    solver.puzzle1(data);
-    solver.puzzle2(data);
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    io.println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    io.println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
 
     io.println("\nfin");
 end

@@ -1,0 +1,100 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using min, max from std.math;
+
+const DATA_FILE :string = "2015/day09/data.txt";
+
+class Solver then
+
+    fn load_data (filename_ :string) list then
+        var _path_ :string = '/'.join([os.cwd(), filename_]);
+        var _content_ :string = file.read_to_string(_path_).trim();
+        return _content_.split('\n');
+    end
+
+    fn puzzle1(data_ :list) int then
+        var graph :table = {:};
+        for row in data_ do
+            var parts :list = row.split(" = ");
+            var cities :list = parts[0].split(" to ");
+
+            if graph.has(cities[0]) do graph[cities[0]][cities[1]] = parts[1].to_int();
+            else graph[cities[0]] = { cities[1]: parts[1].to_int() }; end
+            if graph.has(cities[1]) do graph[cities[1]][cities[0]] = parts[1].to_int();
+            else graph[cities[1]] = { cities[0]: parts[1].to_int() }; end
+        end
+
+        var distances :list = [];
+        var unvisited :list = graph.keys().copy();
+        for city in unvisited do
+            unvisited.erase(city);
+            distances.append(this.find_path(graph, city, unvisited, min));
+            unvisited.append(city);
+        end
+
+        var _result_ :int = distances.reduce(min);
+
+        _result_
+    end
+
+    fn puzzle2(data_ :list) int then
+        var graph :table = {:};
+        for row in data_ do
+            var parts :list = row.split(" = ");
+            var cities :list = parts[0].split(" to ");
+
+            if graph.has(cities[0]) do graph[cities[0]][cities[1]] = parts[1].to_int();
+            else graph[cities[0]] = { cities[1]: parts[1].to_int() }; end
+            if graph.has(cities[1]) do graph[cities[1]][cities[0]] = parts[1].to_int();
+            else graph[cities[1]] = { cities[0]: parts[1].to_int() }; end
+        end
+
+        var distances :list = [];
+        var unvisited :list = graph.keys().copy();
+        for city in unvisited do
+            unvisited.erase(city);
+            distances.append(this.find_path(graph, city, unvisited, max));
+            unvisited.append(city);
+        end
+
+        var _result_ :int = distances.reduce(max);
+
+        _result_
+    end
+
+    fn find_path(graph_ :table, start_ :str, unvisited_ :list, fn_ :function) int then
+        if unvisited_.len >< 0 do return 0; end
+
+        var distances :list = [];
+        for city in unvisited_.copy() do
+            unvisited_.erase(city);
+            distances.append(
+                graph_[start_][city] + this.find_path(graph_, city, unvisited_, fn_)
+            );
+            unvisited_.append(city);
+        end
+
+        distances.reduce(fn_)
+    end
+end
+
+fn main() void then
+    println("Hello, Day 9!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end);
+    println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :int = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end);
+    println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

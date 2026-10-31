@@ -1,0 +1,73 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2016/day07/data.txt";
+
+class Solver then
+
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim_right();
+
+        content.split('\n')
+    end
+
+    fn puzzle1(data_ :list) int then
+        var result :int = 0;
+        for line in data_ do
+            if re.test(`(\[\w*(\w)((?!\2)\w)\3\2\w*\])`, line) do continue; end
+
+            result += re.test(`((\w)((?!\2)\w)\3\2)`, line) use 1 else 0;
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 0;
+
+        for line in data_ do
+            var hypernets :list = [r.groups[0] for r in re.find_all(`\[(\w+)\]`, line)];
+            var supernets :list = re.split(`\[\w+\]`, line);
+            var babs :set = {};
+            for s in supernets do
+                for rem in re.find_all(`(?=(\w)(?!\1)(\w)\1)`, s) do
+                    babs.add("${rem.groups[1]}${rem.groups[0]}${rem.groups[1]}");
+                end
+            end
+
+            for bab in babs do
+                if [h.has(bab) for h in hypernets].any() do
+                    result += 1; continuen;
+                end
+                # for h in hypernets do
+                #     if h.groups[0].has(bab) do result += 1; continuen; end
+                # end
+            end
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 07!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var res1 :int = solver.puzzle1(data);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data); end, 1, 300, .ms);
+    println("part 1: {}, min: {} us, median: {} us".format(res1, t1.min, t1.median));
+
+    var res2 :str = solver.puzzle2(data);
+    var t2 :table = time.bench(fn() then solver.puzzle2(data); end, 1, 300, .ms);
+    println("part 2: {}, min: {} us, median: {} us".format(res2, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();
