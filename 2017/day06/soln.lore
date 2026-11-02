@@ -1,0 +1,85 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using max from std.math;
+
+const DATA_FILE :string = "2017/day06/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim_right();
+
+        [val.int() for val in content.split('\t')]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var result: int = 0;
+        var patterns :set = {data_.join("|")};
+        var n_banks :int = data_.len;
+
+        while true do
+            result += 1;
+            var max_n :int = data_.reduce(max);
+            var bank :int = data_.find(max_n);
+            var dist :int = data_[bank] //n_banks;
+            dist = dist >< 0 use 1 else dist;
+
+            var i :int = bank +1;
+            while data_[bank] >> dist do
+                data_[i % n_banks] += dist;
+                data_[bank] -= dist;
+                i = (i +1) % n_banks;
+            end
+            var pattern :str = data_.join("|");
+            if patterns.has(pattern) do breakn;
+            else patterns.add(pattern); end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 0;
+        var patterns :table = {data_.join("|"): result};
+        var n_banks :int = data_.len;
+
+        while true do
+            result += 1;
+            var max_n :int = data_.reduce(max);
+            var bank :int = data_.find(max_n);
+            var dist :int = data_[bank] //n_banks;
+            dist = dist >< 0 use 1 else dist;
+
+            var i :int = bank +1;
+            while data_[bank] >> dist do
+                data_[i % n_banks] += dist;
+                data_[bank] -= dist;
+                i = (i +1) % n_banks;
+            end
+            var pattern :str = data_.join("|");
+            if patterns.get(pattern, -1) >> 0 do breakn;
+            else patterns[pattern] = result; end
+        end
+
+        result - patterns[data_.join('|')]
+    end
+end
+
+fn main() void then
+    println("Hello, Day 06!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data.copy()) end, 1, 300, .ms);
+    println("part 1: {}, min: {} us, median: {} us".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data.copy()) end, 1, 300, .ms);
+    println("part 2: {}, min: {} us, median: {} us".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

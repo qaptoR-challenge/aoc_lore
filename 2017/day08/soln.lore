@@ -1,0 +1,87 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+using max from std.math;
+
+const DATA_FILE :string = "2017/day08/data.txt";
+
+const Ops :table = {
+    "<":  fn(a, b) do a < b end,
+    ">":  fn(a, b) do a > b end,
+    "<=": fn(a, b) do a << b end,
+    ">=": fn(a, b) do a >> b end,
+    "==": fn(a, b) do a >< b end,
+    "!=": fn(a, b) do a <> b end,
+};
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim_right();
+
+        const PATTERN :str = `([a-z]+) (inc|dec) (-?[0-9]+) if ([a-z]+) ([<>=!]+) (-?[0-9]+)`;
+        var data :table = {
+            "registers": {:},
+            "instructions": [],
+        };
+        for line in content.split('\n') do
+            var rem :re_match = re.find(PATTERN, line);
+            data.registers[rem[1]] = 0;
+            data.registers[rem[4]] = 0;
+
+            data.instructions.append({
+                "reg": rem[1],
+                "op": rem[2],
+                "val": rem[3].int() * (rem[2] >< "inc" use 1 else -1),
+                "c_reg": rem[4],
+                "c_op": rem[5],
+                "c_val": rem[6].int(),
+            });
+        end
+
+        data
+    end
+
+    fn puzzle1(data_ :table) int then
+        var copy = data_.copy(true);
+        for insx in copy.instructions do
+            if Ops[insx.c_op](copy.registers[insx.c_reg], insx.c_val) do
+                copy.registers[insx.reg] += insx.val;
+            end
+        end
+
+        copy.registers.values().reduce(max)
+    end
+
+    fn puzzle2(data_ :list) int then
+        var copy = data_.copy(true);
+        var max_val :int = 0;
+        for insx in copy.instructions do
+            if Ops[insx.c_op](copy.registers[insx.c_reg], insx.c_val) do
+                copy.registers[insx.reg] += insx.val;
+                max_val = max(max_val, copy.registers[insx.reg]);
+            end
+        end
+
+        max_val
+    end
+end
+
+fn main() void then
+    println("Hello, Day 08!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data.copy()) end, 1, 300, .ms);
+    println("part 1: {}, min: {} us, median: {} us".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data.copy()) end, 1,h300, .ms);
+    println("part 2: {}, min: {} us, median: {} us".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

@@ -1,0 +1,104 @@
+using println from std.io;
+using std.file;
+using std.time;
+using std.regex as re;
+
+const REPS :int = 50;
+const WARMUP_MS :int = 500;
+
+fn load_corpus() str then
+    var paths = ["tests/respeedtest/corpus.txt", "corpus.txt"];
+    for path in paths do
+        if file.exists(path) do
+            return file.read_to_string(path);
+        end
+    end
+    println("Error: Could not find corpus.txt");
+    return "";
+end
+
+fn print_row(name :str, matches :int, stats :table) void then
+    println("{:<30} {:>10} {:>12} {:>12} {:>12.1f} {:>12}".format(
+        name, matches, stats.min, stats.median, stats.mean, stats.max
+    ));
+end
+
+fn main() void then
+    var corpus = load_corpus();
+    if corpus >< "" do
+        return;
+    end
+
+    println("=========================================================================================");
+    println("                             REGEX SPEED BENCHMARK (Lore)                                ");
+    println("=========================================================================================");
+    println("Corpus size: {} bytes | Reps: {} | Warmup: {} ms".format(corpus.len, REPS, WARMUP_MS));
+    println("-----------------------------------------------------------------------------------------");
+    println("{:<30} {:>10} {:>12} {:>12} {:>12} {:>12}".format(
+        "Benchmark", "Matches", "Min(us)", "Median(us)", "Mean(us)", "Max(us)"
+    ));
+    println("-----------------------------------------------------------------------------------------");
+
+    # [1] Search (First Email)
+    var p1 = `[\w.+-]+@[\w-]+\.[\w.-]+`;
+    var m1 = (re.find(p1, corpus) <> null) use 1 else 0;
+    var s1 = time.bench(fn() then return re.find(p1, corpus); end, REPS, WARMUP_MS, .us);
+    print_row("[1] Search (First Email)", m1, s1);
+
+    # [2] Find All (Dates)
+    var p2 = `\b\d{4}-\d{2}-\d{2}\b`;
+    var m2 = re.find_all(p2, corpus).len;
+    var s2 = time.bench(fn() then return re.find_all(p2, corpus); end, REPS, WARMUP_MS, .us);
+    print_row("[2] Find All (Dates)", m2, s2);
+
+    # [3] Find All (URLs)
+    var p3 = `https?://[^\s/$.?#].[^\s]*`;
+    var m3 = re.find_all(p3, corpus).len;
+    var s3 = time.bench(fn() then return re.find_all(p3, corpus); end, REPS, WARMUP_MS, .us);
+    print_row("[3] Find All (URLs)", m3, s3);
+
+    # [4] Captures (Key-Values)
+    var p4 = `(\w+)\s*=\s*"([^"]*)"`;
+    var m4 = re.find_all(p4, corpus).len;
+    var s4 = time.bench(fn() then
+        var matches = re.find_all(p4, corpus);
+        var count :int = 0;
+        for m in matches do
+            var k = m[1];
+            var v = m[2];
+            if k <> "" and v <> "" do
+                count += 1;
+            end
+        end
+        return count;
+    end, REPS, WARMUP_MS, .us);
+    print_row("[4] Captures (Key-Values)", m4, s4);
+
+    # [5] Replace All (Emails)
+    var p5 = `[\w.+-]+@[\w-]+\.[\w.-]+`;
+    var m5 = re.find_all(p5, corpus).len;
+    var s5 = time.bench(fn() then return re.replace(p5, corpus, "user@domain.com"); end, REPS, WARMUP_MS, .us);
+    print_row("[5] Replace All (Emails)", m5, s5);
+
+    # [6] Alternation (Log Levels)
+    var p6 = `\b(?:error|warn|info|debug|trace|fatal)\b`;
+    var m6 = re.find_all(p6, corpus).len;
+    var s6 = time.bench(fn() then return re.find_all(p6, corpus); end, REPS, WARMUP_MS, .us);
+    print_row("[6] Alternation (Log Levels)", m6, s6);
+
+    # [7] Quoted Strings (Escapes)
+    var p7 = `"[^"\\]*(?:\\.[^"\\]*)*"`;
+    var m7 = re.find_all(p7, corpus).len;
+    var s7 = time.bench(fn() then return re.find_all(p7, corpus); end, REPS, WARMUP_MS, .us);
+    print_row("[7] Quoted Strings (Escapes)", m7, s7);
+
+    # [8] Backreference (Dup Words)
+    var p8 = `\b(\w+)\s+\1\b`;
+    var m8 = re.find_all(p8, corpus).len;
+    var s8 = time.bench(fn() then return re.find_all(p8, corpus); end, REPS, WARMUP_MS, .us);
+    print_row("[8] Backreference (Dup Words)", m8, s8);
+
+    println("=========================================================================================");
+end
+
+main();

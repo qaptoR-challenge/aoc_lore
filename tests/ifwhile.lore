@@ -1,0 +1,16 @@
+using println from std.io;
+
+fn main() void do
+    if true do
+        # var i :int = 0;
+        # while i << 6_000 do
+        #     println("step2: ", i);
+        #     i += 1;
+        # end
+        for i in [0::6_000] do
+            println("step2: ", i);
+        end
+    end
+end
+
+main();

@@ -1,0 +1,104 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+using max from std.math;
+
+const DATA_FILE :string = "2017/day07/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim_right();
+
+        var data :table = {:};
+        for line in content.split('\n') do
+            var rem = re.find(
+                `([a-z]+) \((\d+)\)(?: -> ((?:[a-z]+(?:, )?)+))?`, line
+            );
+            data[rem[1]] = {
+                weight: rem[2].int(),
+                children: rem[3] use rem[3].split(", ") else [],
+            };
+        end
+
+        data
+    end
+
+    fn puzzle1(data_ :table) str then
+        var result;
+        var nodes :set = {};
+        for _, v in data_ do for child in v.children do
+            nodes.add(child);
+        end end
+
+        for node in data_ do
+            if not nodes.has(node) do result = node; breakn; end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :table, root_ :str) int then
+        this.rec_weigh(data_, root_)
+    end
+
+    fn rec_weigh(data_: table, node_ :str) table then
+        var weight :int = data_[node_].weight;
+        var change :int = 0;
+        var weights :table = {:};
+
+        for child in data_[node_].children do
+            var rcw = this.rec_weigh(data_, child);
+            change = max(change, rcw.change);
+            weight += rcw.weight;
+            weights[rcw.weight] = weights.get(rcw.weight, []).append(child);
+        end
+        var balanced :bool = weights.len << 1;
+
+        if not balanced do
+            var odd_weight = weights.keys().reduce(fn(acc, key) do
+                weights[key].len < weights[acc].len use key else acc
+            end);
+            var normal_weight = weights.keys().reduce(fn(acc, key) do
+                weights[key].len > weights[acc].len use key else acc
+            end);
+            var values :table =
+                this.get_change(data_, weights[odd_weight][0], normal_weight);
+            change = values.change;
+            weight -= values.original - values.change;
+        end
+
+        { weight: weight, change: change }
+    end
+
+    fn get_change(data_ :table, node_ :str, target_ :int) table do
+        var weight :int = data_[node_].weight;
+        var cweight :int = 0;
+        for child in data_[node_].children do
+            cweight += this.rec_weigh(data_, child).weight;
+        end
+
+        var diff :int = target_ - (cweight + weight);
+
+        { change:  weight + diff, original: weight }
+    end
+end
+
+fn main() void then
+    println("Hello, Day 07!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} us, median: {} us".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data, t1.result) end, 1, 300, .ms);
+    println("part 2: {}, min: {} us, median: {} us".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

@@ -1,0 +1,102 @@
+using print, println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+using prod from std.iter;
+
+const DATA_FILE :string = "2016/day08/data.txt";
+
+class Solver then
+
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim_right();
+
+        var data :table = {:};
+        var sects :list = content.split("\n\n");
+        var size_m :table? = re.find(`(\d+), (\d+)`, sects[0]);
+        data["size"] = (size_m.?.groups[0].int(), size_m.?.groups[1].int());
+
+        var rectx :str = `(rect) (\d+)x(\d+)`;
+        var rotatex :str = `(rotate) (row|column) (x|y)=(\d+) by (\d+)`;
+
+        data["commands"] = [];
+        var lines :list = sects[1].split('\n');
+        for line in lines do
+            var cmd :table = {:};
+
+            for pattern in [rectx, rotatex] do
+                if m :table = re.find(pattern, line) do match m.groups[0] do
+                "rect" do
+                    cmd["type"] = m.groups[0];
+                    cmd["size"] = (m.groups[1].int(), m.groups[2].int());
+                end
+                "rotate" do
+                    cmd["type"] = m.groups[0];
+                    cmd["axis"] = m.groups[2];
+                    cmd["index"] = m.groups[3].int();
+                    cmd["amount"] = m.groups[4].int();
+                end end end
+            end
+            data.commands.append(cmd);
+        end
+
+        data
+    end
+
+    fn puzzle1(data_ :table) int then
+        var screen :table = {:};
+        for pos in prod([0:.data_.size[0]], [0:.data_.size[1]]) do
+            screen[pos] = false;
+        end
+
+        for cmd in data_.commands do match cmd.type do
+        "rect" do for pos in prod([0:.cmd.size[0]], [0:.cmd.size[1]]) do
+            screen[pos] = true;
+        end end
+        "rotate" do
+            var transfer :table = {:};
+            var x = cmd.axis >< 'x' use 1 else data_.size[0];
+            var y = cmd.axis >< 'y' use 1 else data_.size[1];
+            for pos in prod([0:.x], [0:.y]) do
+                var c = cmd.axis >< 'x' use cmd.index else pos[0];
+                var r = cmd.axis >< 'y' use cmd.index else pos[1];
+                var index = cmd.axis >< 'x' use 1 else 0;
+                var target = [c, r];
+                var source = (c, r);
+                target[index] = (target[index] + cmd.amount) % data_.size[index];
+                transfer[target.tuple()] = screen[source];
+            end
+            for key in transfer.keys() do
+                screen[key] = transfer[key];
+            end
+        end end end
+
+        for r in [0:.data_.size[1]] do for c in [0:.data_.size[0]] do
+            print(screen[(c, r)] use '#' else '.'); end
+            println();
+        end
+
+        screen.values().count(true)
+    end
+end
+
+fn main() void then
+    println("Hello, Day 08!\n");
+
+    var solver = Solver();
+    var data :table = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(
+        fn() then solver.puzzle1(data) end,
+        1, 300, .ms
+    ); println(
+        "part 1: {}, min: {} us, median: {} us"
+        .format(t1.result, t1.min, t1.median)
+    );
+
+    println("\nfin");
+end
+
+main();

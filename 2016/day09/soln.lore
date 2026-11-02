@@ -1,0 +1,83 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2016/day09/data.txt";
+const PATTERN :str = `\((\d+)x(\d+)\)`;
+
+class Solver then
+    var memo :table = {:};
+
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim_right();
+
+        content.split('\n')
+    end
+
+    fn puzzle1(data_ :list) int then
+        this.decompress(data_[0])
+    end
+
+    fn puzzle2(data_ :list) int then
+        this.rec_decompress(data_[0])
+    end
+
+    fn decompress(line_ :str) int then
+        var decompressed :int = 0;
+
+        while line_ <> "" do
+            if rem :table = re.find(PATTERN, line_) do
+                decompressed += rem.start;
+                var length :int = rem[1].int();
+                var reps :int = rem[2].int();
+                decompressed += reps * length;
+                line_ -= rem.end + length;
+            else
+                decompressed += line.len;
+                line = "";
+            end
+        end
+
+        decompressed
+    end
+
+    fn rec_decompress(line_ :str) int then
+        if this.memo.has(line_) do return this.memo[line_]; end
+
+        var length :int = 0;
+        if rem :table = re.find(PATTERN, line_) do
+            length = rem.start;
+            var reclen :int = rem[1].int();
+            var reps :int = rem[2].int();
+            var repeat :str = line_[rem.end:.rem.end + reclen];
+            var rest :str = line_[rem.end+reclen;;-1];
+            length += reps * this.rec_decompress(repeat);
+            length += this.rec_decompress(rest);
+        else
+            length += line_.len;
+        end
+
+        this.memo[line_] = length;
+        length
+    end
+end
+
+fn main() void then
+    println("Hello, Day 09!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {}, min: {} us, median: {} us".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} us, median: {} us".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();
