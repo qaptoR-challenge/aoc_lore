@@ -1,0 +1,122 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+using max from std.math;
+using std.coll;
+
+const DATA_FILE :string = "2018/day04/data.txt";
+
+class Solver then
+fn load_data (filename_ :string) table then
+    var _path_ :str = '/'.join([os.cwd(), filename_]);
+
+    var data :table = {:};
+    for row in file.read_to_string(_path_).split('\n', false) do
+        var info :list = row.split("] ", false);
+        var stamps :list = (info[0] - 1).split(' ', false);
+        var date :tuple = stamps[0].split('-', false).tuple();
+        var time :tuple = stamps[1].split(':').tuple();
+        data.getadd(date, {:})[time] = info[1];
+    end
+
+    data.sorts();
+    for val in data.values() do val.sorts(); end
+
+    data
+end
+
+fn puzzle1(data_ :table) tuple then
+    var shift_count :int = 0;
+    var shifts :table = {:};
+    var guard :int = -1;
+
+    for date, val in data_ do
+        for time, event in val do
+            if shift :re_match = re.find(`^Guard #([\d]+)`, event) do
+                guard = shift[1].int();
+                shifts.getadd(guard, {:});
+                shift_count += 1;
+                continue;
+            end
+            if not shifts[guard].has(shift_count) do
+                shifts[guard][shift_count] = [];
+            end
+            shifts[guard][shift_count].append({"time": time[1], "info": event});
+        end
+    end
+
+    var counts :table = {:};
+    for g in shifts do
+        var count :int = 0;
+        for shift in shifts[g] do
+            for i in [0:.shifts[g][shift].len:2] do
+                var start :int = shifts[g][shift][i].time.int();
+                var end_ :int = shifts[g][shift][i+1].time.int();
+                count += end_ - start;
+            end
+        end
+        counts[g] = count;
+    end
+
+    var max_guard = counts.keys().reduce(fn(m, key) do
+        counts[key] > counts[m] use key else m
+    end);
+
+    var minutes :array = coll.array(60, 0);
+    for shift in shifts[max_guard] do
+        for i in [0:.shifts[max_guard][shift].len:2] do
+            var start :int = shifts[max_guard][shift][i].time.int();
+            var end_ :int = shifts[max_guard][shift][i+1].time.int();
+            for j in [start:.end_] do minutes[j] += 1; end
+        end
+    end
+
+    var max_minute :int = minutes.reduce(max);
+    max_minute = minutes.find(max_minute);
+
+    (max_guard * max_minute, shifts)
+end
+
+fn puzzle2(data_ :table) int then
+    var counts :table = {:};
+    for g, val in data_ do
+        var minutes :array = coll.array(60, 0);
+        for shift, v in val do
+            for i in [0:.v.len:2] do
+                var start :int = v[i].time.int();
+                var end_ :int = v[i+1].time.int();
+                for j in [start:.end_] do minutes[j] += 1; end
+            end
+        end
+        counts[g] = minutes;
+    end
+
+    var max_guard :int = counts.keys().reduce(fn(m, key) do
+        counts[key].reduce(max) > counts[m].reduce(max) use key else m
+    end);
+
+    var max_minute :int = counts[max_guard].reduce(max);
+    max_minute = counts[max_guard].find(max_minute);
+
+    max_guard * max_minute
+end
+end
+
+fn main() void then
+    println("Hello, Day 04!\n");
+
+    var solver = Solver();
+    var data :table = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} us, median: {} us".format(t1.result[0], t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t1.result[1]) end, 1,h300, .ms);
+    println("part 2: {}, min: {} us, median: {} us".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();
