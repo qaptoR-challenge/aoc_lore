@@ -1,0 +1,52 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using cycle from std.iter;
+
+const DATA_FILE :string = "2018/day01/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [val.int() for val in file.read_to_string(_path_).split('\n', false)]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var frequency :int = 0;
+        for change in data_ do
+            frequency += change;
+        end
+
+        frequency
+    end
+
+    fn puzzle2(data_ :list) int then
+        var frequency :int = 0;
+        var seen :set = {0};
+        for change in cycle(data_) do
+            frequency += change;
+            if seen.has(frequency) do breakn; end
+            seen.add(frequency);
+        end
+
+        frequency
+    end
+end
+
+fn main() void then
+    println("Hello, Day 09!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

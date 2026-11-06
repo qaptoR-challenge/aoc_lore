@@ -1,0 +1,72 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+using comb from std.iter;
+
+const DATA_FILE :string = "2018/day02/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        file.read_to_string(_path_).split('\n', false)
+    end
+
+    fn puzzle1(data_ :list) int then
+        var count2 :int = 0;
+        var count3 :int = 0;
+
+        for row in data_ do
+            var counts :table = {:};
+            for char in row do
+                counts[char] = counts.get(char, 0) + 1;
+            end
+
+            if counts.values().has(2) do count2 += 1; end
+            if counts.values().has(3) do count3 += 1; end
+        end
+
+        count2 * count3
+    end
+
+    fn puzzle2(data_ :list) str then
+        var result :str?;
+        # for pair in comb(data_, 2) do
+        #     if rem :re_match = re.find(
+        #         `^(\w*)\w(\w*) \1\w\2$`,
+        #         "{} {}".format(pair[0], pair[1])
+        #     ) do
+        #         result = rem[1] + rem[2];
+        #         breakn;
+        #     end
+        # end
+        var seen :set = {};
+        for word in data_ do
+            for i in [0:.word.len] do
+                var pattern :str = word[0:.i] + "*" + word[i,;-1];
+                if seen.has(pattern) do result = pattern - '*'; end
+                seen.add(pattern);
+            end
+        end
+
+        result.?
+    end
+end
+
+fn main() void then
+    println("Hello, Day 02!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

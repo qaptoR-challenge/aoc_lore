@@ -1,0 +1,85 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using prod, comb from std.iter;
+
+const DATA_FILE :string = "2018/day03/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_);
+
+        var data :table = {:};
+        for row in content.split('\n', false) do
+            var info :list = row.split(" @ ", false);
+            var rect :list = info[1].split(": ", false);
+            var pos :list = rect[0].split(",", false);
+            var size :list = rect[1].split("x", false);
+            var id :int = info[0] -1 as int;
+            var rectd :table = {
+                pos: (pos[0].int(), pos[1].int()),
+                size: (size[0].int(), size[1].int()),
+            };
+            rectd.end = (
+                rectd.pos[0] + rectd.size[0],
+                rectd.pos[1] + rectd.size[1]
+            );
+            data[id] = rectd;
+        end
+
+        data
+    end
+
+    fn puzzle1(data_ :list) int then
+        var inches :table = {:};
+        for _, rect in data_ do
+            for pos in prod(
+            [rect.pos[0]:.rect.end[0]],
+            [rect.pos[1]:.rect.end[1]]
+            ) do
+                inches.getadd(pos, 0);
+                inches[pos] += 1;
+            end
+        end
+
+        inches.values().filter(fn(x) do x > 1 end).len
+    end
+
+    fn puzzle2(data_ :list) int then
+        var claims :table = {:};
+        for item in comb(data_.items(), 2) do
+            if this.overlap(item[0][1], item[1][1]) do
+                claims[item[0][0]] = true;
+                claims[item[1][0]] = true;
+            end
+        end
+
+        data_.keys().filter(fn(x) do not claims.get(x, false) end)[0]
+    end
+
+    fn overlap(a :table, b :table) bool then
+        var x_overlap :bool = a.pos[0] < b.end[0] and a.end[0] > b.pos[0];
+        var y_overlap :bool = a.pos[1] < b.end[1] and a.end[1] > b.pos[1];
+
+        x_overlap and y_overlap
+    end
+end
+
+fn main() void then
+    println("Hello, Day 03!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();
