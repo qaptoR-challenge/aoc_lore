@@ -32,15 +32,6 @@ class Solver then
 
     fn puzzle2(data_ :list) str then
         var result :str?;
-        # for pair in comb(data_, 2) do
-        #     if rem :re_match = re.find(
-        #         `^(\w*)\w(\w*) \1\w\2$`,
-        #         "{} {}".format(pair[0], pair[1])
-        #     ) do
-        #         result = rem[1] + rem[2];
-        #         breakn;
-        #     end
-        # end
         var seen :set = {};
         for word in data_ do
             for i in [0:.word.len] do

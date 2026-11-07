@@ -1,0 +1,15 @@
+using println from std.io;
+
+
+fn main() void then
+    var ascii :array = |[0]|;
+
+    for i in [1::26] do
+        ascii[0] = 0x60 + i;
+        println(ascii.get_str_from_utf8());
+        println(ascii[0] as str);
+        println(("\\" + "u" + "${ascii[0]}").format());
+    end
+end
+
+main();

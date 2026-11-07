@@ -1,0 +1,94 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using min from std.math;
+
+const DATA_FILE :string = "2018/day05/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+       file.read_to_string(_path_).trim().chars()
+    end
+
+    fn puzzle1(data_ :list) int then
+        var polymer :table = {:};
+        var head :int = -1;
+        for i in [data_.len.:0] do
+            polymer[i] = { next: head, prev: i-1, char: data_[i] };
+            head = i;
+        end
+
+        this.react(polymer, head);
+        polymer.len
+    end
+
+    fn puzzle2(data_ :list) int then
+        var alpha :int = 0x61;
+        var counts :table = {:};
+        for alpha in [alpha:.alpha + 26] do
+            var letter :str = alpha.unicode();
+            var data = data_.filter(fn(x) do x.lower() <> letter end);
+            var polymer :table = {:};
+            var head :int = -1;
+            for i in [data.len.:0] do
+                polymer[i] = { next: head, prev: i -1, char: data[i] };
+                head = i;
+            end
+
+            this.react(polymer, head);
+            counts[letter] = polymer.len;
+        end
+
+        counts.values().reduce(min)
+    end
+
+    fn react(polymer_ :table, head_ :int) void then
+        var head :int = head_;
+        var current :int = head;
+        while current <> -1 and polymer_[current].next<> -1 do
+            var next_node :int = polymer_[current].next;
+            var a :str = polymer_[current].char;
+            var b :str = polymer_[next_node].char;
+
+            if a <> b and a.lower() >< b.lower() do
+                var previous = polymer_[current].prev;
+                var next_next = polymer_[next_node].next;
+                polymer_.erase(current);
+                polymer_.erase(next_node);
+                if previous >< -1 do
+                    head = next_next;
+                    polymer_[next_next].prev = -1;
+                    current = next_next;
+                elif next_next >< -1 do
+                    polymer_[previous].next = -1;
+                    current = previous;
+                else
+                    polymer_[previous].next = next_next;
+                    polymer_[next_next].prev = previous;
+                    current = previous;
+                end
+            else
+                current = polymer_[current].next;
+            end
+        end
+    end
+end
+
+fn main() void then
+    println("Hello, Day 05!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();
