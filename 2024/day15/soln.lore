@@ -1,0 +1,205 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+# extra
+using int from std.type;
+
+const DAY :str = "15";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+const DIRS :table = {
+    '>': (1, 0),
+    '<': (-1, 0),
+    '^': (0, -1),
+    'v': (0, 1),
+};
+const PAIRS :table = {
+    '[' : (1, 0),
+    ']' : (-1, 0),
+};
+
+class Solver then
+    var size :tuple;
+
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var (map, ops) = file.read_to_string(_path_).split("\n\n", false);
+        {map: map, ops: ops}
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+
+        var map :table = @.get_map(data.map);
+        var ops :str = data.ops // '\n';
+
+        for op in ops do @.try_op(map, op); end
+
+        map.erase('@');
+        for pos, v in map do
+            if v >< 'O' then result += pos.x + 100 * pos.y; end
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+
+        var map :table = @.widen_map(@.get_map(data.map));
+        var ops :str = data.ops // '\n';
+
+        for op in ops do @.try_wide_op(map, op); end
+
+        map.erase('@');
+        for pos, v in map do
+            if v >< '[' then result += pos.x + 100 * pos.y; end
+        end
+
+        result
+    end
+
+    fn get_map (map_ :string) table then
+        var map :table = {:};
+        for y, row in map_.split('\n', false) do
+            for x, ch in row.chars() do
+                if ch >< '@' then map['@'] = (x, y); end
+                map[(x, y)] = ch;
+        end end
+
+        map
+    end
+
+    fn widen_map(map :table) table then
+        var nmap :table = {:};
+        map.erase('@');
+        for pos, ch in map then
+            var npos :tuple = vec.add(pos, (pos.x, 0));
+            var dpos :tuple = vec.add(npos, (1, 0));
+            match ch then
+                '#', '.' do
+                    nmap[npos] = ch;
+                    nmap[dpos] = ch;
+                end
+
+                'O' do
+                    nmap[npos] = '[';
+                    nmap[dpos] = ']';
+                end
+
+                '@' do
+                    nmap['@'] = npos;
+                    nmap[npos] = '@';
+                    nmap[dpos] = '.';
+                end
+        end end
+
+        nmap
+    end
+
+    fn try_op(map :table, op :str) void then
+        var pos = map['@'];
+        var dir = DIRS[op];
+
+        if @.push(map, pos, dir) do map['@'] = vec.add(pos, dir); end
+    end
+
+    fn try_wide_op(map :table, op :str) void then
+        var pos = map['@'];
+        var dir = DIRS[op];
+
+        match dir then
+            (1, 0), (-1, 0) do
+                if @.push(map, pos, dir) then map['@'] = vec.add(pos, dir); end
+            end
+            (0, 1), (0, -1) do
+                var swaps :set = @.wide_push(map, pos, dir, {});
+                if swaps.len > 0 then
+                    var swap_list = [];
+                    for s in swaps do swap_list.append(s); end
+                    if dir.y < 0 then
+                        swap_list.sorts_by(fn(a, b) then a.x.y < b.x.y end);
+                    else
+                        swap_list.sorts_by(fn(a, b) then a.x.y > b.x.y end);
+                    end
+                    for swapping in swap_list do
+                        @.swap(map, swapping.x, swapping.y);
+                    end
+                    map['@'] = vec.add(pos, dir);
+                end
+            end
+        end
+    end
+
+    fn push(map :table, pos :tuple, dir :tuple) bool then
+        var npos = vec.add(pos, dir);
+        match map[npos] then
+            '#' do return false; end
+            '.' do @.swap(map, pos, npos); end
+            'O', '[', ']' do
+                if @.push(map, npos, dir) then
+                    @.swap(map, pos, npos);
+                else return false; end
+            end
+        end
+
+        true
+    end
+
+    fn wide_push(map :table, pos :tuple, dir :tuple, swaps :set) set then
+        var npos = vec.add(pos, dir);
+
+        match map[npos] then
+            '#' do swaps.clear(); return swaps; end
+            '.' do swaps.add((pos, npos)); return swaps; end
+            '[', ']' do
+                var ppos = vec.add(npos, PAIRS[map[npos]]);
+                var nppos = vec.add(ppos, dir);
+
+                if @.wide_push(map, npos, dir, swaps).len > 0 then
+                    swaps.add((pos, npos));
+                else return swaps; end
+
+                if @.wide_push(map, ppos, dir, swaps).len > 0 then
+                    swaps.add((ppos, nppos));
+                else return swaps; end
+            end
+        end
+
+        swaps
+    end
+
+    fn swap(map :table, pos :tuple, npos :tuple) void then
+        var temp :str = map[pos];
+        map[pos] = map[npos];
+        map[npos] = temp;
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();
