@@ -1,0 +1,95 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+
+const DATA_FILE :string = "2018/day08/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var nums :list = file.read_to_string(_path_).split(' ', false);
+        nums.reverse();
+        var tree :table = {:};
+        { root: this.rec_parse(tree, nums), tree: tree }
+    end
+
+    fn rec_parse(data_ :table, nums_ :list) int then
+        var num_children :int = nums_.pop().int();
+        var num_meta :int = nums_.pop().int();
+
+        var children :list = [];
+        for _ in [0:.num_children] do
+            children.append(this.rec_parse(data_, nums_));
+        end
+
+        var id :int = data_.len;
+
+        var meta :list = [];
+        for i in [0:.num_meta] do
+            meta.append(nums_.pop().int());
+        end
+        data_[id] = { children: children, meta: meta };
+
+        id
+    end
+
+    fn puzzle1(data_ :table) int then
+        var result :int = 0;
+        var queue :list = [data_.root];
+        until queue.is_empty() do
+            var id = queue.pull();
+            for child in data_.tree[id].children do queue.append(child); end
+            for meta in data_.tree[id].meta do result += meta; end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var values :table = {:};
+        this.rec_valuation(data_, data_.root, values);
+
+        values[data_.root]
+    end
+
+    fn rec_valuation(data_ :table, id_ :int, values_ :table) void then
+        var value :int = 0;
+        if data_.tree[id_].children.is_empty() do
+            value = data_.tree[id_].meta.reduce(fn(a, e) do a + e end);
+            values_[id_] = value;
+            return;
+        end
+
+        for child in data_.tree[id_].children do
+            this.rec_valuation(data_, child, values_);
+        end
+
+        for meta in data_.tree[id_].meta do
+            var index = meta -1;
+            if 0 << index and index < data_.tree[id_].children.len do
+                value += values_[data_.tree[id_].children[index]];
+            end
+        end
+
+        values_[id_] = value;
+    end
+
+end
+
+fn main() void then
+    println("Hello, Day 08!\n");
+
+    var solver = Solver();
+    var data :table = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

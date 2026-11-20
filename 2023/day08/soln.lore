@@ -1,0 +1,96 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.math;
+using std.regex as re;
+# extra
+using int from std.type;
+
+const DAY :str = "08";
+const DATA_FILE :str = "2023/day%s/data.txt" %DAY;
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var pattern = `(\w+) = \((\w+), (\w+)\)`;
+        var data :table = {:};
+
+        var parts :list = file.read_to_string(_path_).split("\n\n", false);
+        data.directions = parts[0].chars();
+
+        for line in parts[1].split("\n", false) then
+            var rem :re_match = re.find(pattern, line).?;
+            data[ rem[1] ] = { L: rem[2], R: rem[3] };
+        end
+
+        data
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        var index :int = 0;
+        var current :str = "AAA";
+        while current <> "ZZZ" do
+            var direction :str = data.directions[index];
+            current = data[current][direction];
+            index = (index +1) % data.directions.len;
+            result += 1;
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result = 0;
+        var starts :list = data.keys();
+        starts.erase("directions");
+        starts = starts.filter(fn(e) do e[-1] >< 'A' end);
+        starts = starts.map(fn(e) do {current: e, count: 0} end);
+
+        var index :int = 0;
+        var finished :list = [];
+        while true do
+            result += 1;
+            var direction :str = data.directions[index];
+            var erase :list = [];
+            for start in starts do
+                start.current = data[start.current][direction];
+                if start.current[-1] >< 'Z' then
+                    start.count = result;
+                    finished.append(start);
+                    erase.append(start);
+                    continue;
+                end
+            end
+            for e in erase do starts.erase(e); end
+            if starts.len >< 0 do break2; end
+            index = (index +1) % data.directions.len;
+        end
+
+        var nums = finished.map(fn(e) do e.count end);
+        nums.reduce(math.lcm)
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

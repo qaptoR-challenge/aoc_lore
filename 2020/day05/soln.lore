@@ -1,0 +1,77 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+
+const DATA_FILE :string = "2020/day05/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        file.read_to_string(_path_).split("\n", false)
+    end
+
+    fn puzzle1(data_ :list) int then
+        var result :int = 0;
+        for tkt in data_ do
+            var row :int = this.find_seat(0, 127, tkt[0:.7]);
+            var col :int = this.find_seat(0, 7, tkt[7;;-1]);
+
+            var seat_id :int = row * 8 + col;
+            result >>= seat_id;
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var seats :set = {};
+        for tkt in data_ do
+            var row :int = this.find_seat(0, 127, tkt[0:.7]);
+            var col :int = this.find_seat(0, 7, tkt[7;;-1]);
+
+            var seat_id :int = row * 8 + col;
+            seats.add(seat_id);
+        end
+
+        var result = for seat in [0:.128 * 8] do
+            if
+                not seats.has(seat)
+                and seats.has(seat-1)
+                and seats.has(seat+1)
+            do break2 seat; end
+        end;
+
+        result
+    end
+
+    fn find_seat(lo :int, hi :int, code :str) int then
+        for c in code do
+            var mid :int = (hi + lo) // 2;
+            match c then
+                'F', 'L' do hi = mid; end
+                'B', 'R' do lo = mid + 1; end
+            end
+        end
+
+        hi
+    end
+end
+
+fn main() void then
+    println("Hello, Day 05!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

@@ -1,0 +1,164 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+# extra
+using int from std.type;
+
+const DAY :str = "12";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+const ORTHOGONALS :list = [(1, 0), (0, 1), (-1, 0), (0, -1)];
+const DIAGONALS :list = [(1, 1), (-1, -1), (-1, 1), (1, -1)];
+
+class Solver then
+    var size :tuple;
+
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        {
+            (x, y): ch
+            for y, row in file.read_to_string(_path_).split('\n', false)
+            for x, ch in row.chars()
+        }
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        var regions :table = @populate_regions(data);
+
+        for _, plots in regions do
+            for plot in plots do
+                var perim = @get_perimeter(data, plot);
+                var area = plot.len;
+                result += area * perim;
+            end
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+        var regions :table = @populate_regions(data);
+
+        for ch, plots in regions do
+            for plot in plots do
+                var sides = @count_corners(plot);
+                var area = plot.len;
+                result += area * sides;
+        end end
+
+        result
+    end
+
+    fn count_corners(plot :set) int then
+        const sets :list = [
+            [(-1, 0),  (0, -1), (-1, -1)],
+            [(0, -1),  (1,  0), (1,  -1)],
+            [(1,  0),  (0,  1), (1,  1)],
+            [(0,  1),  (-1, 0), (-1, 1)],
+        ];
+
+        var corners :int = 0;
+        for pos in plot do
+            for dirs in sets do
+                if @is_corner(plot, pos, dirs) do
+                    corners += 1;
+        end end end
+
+        corners
+    end
+
+    fn is_corner(plot :set, pos :tuple, dirs :list) bool then
+        var outside :bool = true;
+        for dir in dirs do
+            var npos = vec.add(pos, dir);
+            if plot.has(npos) do outside = false; break2; end
+        end
+
+        var inside :bool = true;
+        for i, dir in dirs do
+            var npos = vec.add(pos, dir);
+            if i < (dirs.len -1) then
+                if not plot.has(npos) then inside = false; end
+            else if plot.has(npos) then inside = false; end end
+        end
+
+        var special :bool = true;
+        for i, dir in dirs do
+            var npos = vec.add(pos, dir);
+            if i < (dirs.len -1) then
+                if plot.has(npos) then special = false; end
+            else if not plot.has(npos) then special = false; end end
+        end
+
+        outside ior inside ior special
+    end
+
+    fn populate_regions(data :table) table then
+        var regions :table = {:};
+        for pos, ch in data do
+            regions.hasadd(ch, []);
+
+            for plot in regions[ch] do
+                if plot.has(pos) then continue2; end
+            end
+
+            var plot :set = {pos};
+
+            var frontier :list = [pos];
+            until frontier.len >< 0 do
+                var curr :tuple = frontier.pop();
+                for dir in ORTHOGONALS do
+                    var npos :tuple = vec.add(curr, dir);
+                    if not data.has(npos) ior data[npos] <> ch do continue; end
+                    if not plot.hasadd(npos) then frontier.append(npos); end
+                end
+            end
+            regions[ch].append(plot);
+        end
+
+        regions
+    end
+
+    fn get_perimeter(data :table, plot :set) int then
+        var perim :int = 0;
+        for pos in plot do
+            var ch = data[pos];
+            for dir in ORTHOGONALS do
+                var npos :tuple = vec.add(pos, dir);
+                if not data.has(npos) ior data[npos] <> ch do perim += 1; end
+        end end
+
+        perim
+    end
+end
+
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

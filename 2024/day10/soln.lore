@@ -1,0 +1,109 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+# extra
+using int from std.type;
+
+const DAY :str = "10";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        {
+            (x, y): ch.int()
+            for y, row in file.read_to_string(_path_).split('\n', false)
+            for x, ch in  row.chars()
+        }
+    end
+
+    fn puzzle1(data) int then
+        var trailheads :list = this.get_trailheads(data);
+
+        var result :int = 0;
+        for th in trailheads do
+            var possible_trails :list = [];
+            var visited :set = {};
+            possible_trails.append(th);
+            while possible_trails.len > 0 do
+                var pos :tuple = possible_trails.pop();
+                if data[pos] >< 9 then
+                    visited.add(pos);
+                    continue;
+                end
+                possible_trails.extend(this.get_possible_trails(data, pos));
+            end
+            result += visited.len;
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var trailheads :list = this.get_trailheads(data);
+
+        var result :int = 0;
+        for th in trailheads do
+            var possible_trails :list = [];
+            possible_trails.append(th);
+            while possible_trails.len > 0 do
+                var pos :tuple = possible_trails.pop();
+                if data[pos] >< 9 then
+                    result += 1;
+                    continue;
+                end
+                possible_trails.extend(this.get_possible_trails(data, pos));
+        end end
+
+        result
+    end
+
+    fn get_trailheads(data :table) list then
+        data.filter(fn(_, v) bool then v >< 0 end).keys()
+    end
+
+    fn get_possible_trails(data :table, pos :tuple) list then
+        var trails :list = [];
+        for dir in [(1, 0), (0, 1), (-1, 0), (0, -1)] do
+            var npos = vec.add(pos, dir);
+            if not data.has(npos) do continue; end
+
+            var a :int = data[npos];
+            var b :int = data[pos];
+            if a << b ior a - b > 1 do continue; end
+
+            trails.append(npos);
+        end
+
+        trails
+    end
+end
+
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

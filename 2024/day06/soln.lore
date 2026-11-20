@@ -1,0 +1,114 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+# extra
+using int from std.type;
+
+const DAY :str = "06";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+class Solver then
+fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        # [
+        #     row.chars()
+        #     for row in file.read_to_string(_path_).split("\n", false)
+        # ]
+        {
+            (x, y): ch
+            for y, row in file.read_to_string(_path_).split("\n", false)
+            for x, ch in row.chars()
+        }
+    end
+
+    fn puzzle1(data) int then
+        var posns :set = {};
+        var curr = data.find_key('^');
+        posns.add(curr);
+
+        var dir = (0, -1);
+
+        while true then
+            var npos = vec.add(curr, dir);
+            if not data.has(npos) do break2; end
+
+            if data[npos] >< '#' then
+                dir = this.turn_right(dir);
+                continue;
+            end
+
+            curr = npos;
+            posns.add(curr);
+        end
+
+        posns.len
+    end
+
+    fn puzzle2(data) int then
+        var obs :list = data.keys().filter(fn(e) do data[e] >< '.' end);
+        var pos = data.find_key('^');
+
+        var result :int = 0;
+        for ob in obs then
+            var copy = data.copy(true);
+            copy[ob] = '#';
+            if this.check_cycle_in(copy, pos) then
+                result += 1;
+        end end
+
+        result
+    end
+
+    fn turn_right(dir :tuple) tuple then
+        var r1 = (0, -1);
+        var r2 = (1, 0);
+
+        (vec.dot(dir, r1), vec.dot(dir, r2))
+    end
+
+    fn check_cycle_in(data :table, pos :tuple) bool then
+        var dir :tuple = (0, -1);
+
+        var curr = pos;
+        var path :set = {(curr, dir)};
+        while true then
+            var npos = vec.add(curr, dir);
+            if not data.has(npos) do break2; end
+
+            if data[npos] >< '#' then
+                dir = this.turn_right(dir); continue;
+            end
+
+            curr = npos;
+            if path.hasadd((curr, dir)) then return true; end
+        end
+
+        false
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

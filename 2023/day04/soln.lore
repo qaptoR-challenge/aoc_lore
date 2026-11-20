@@ -1,0 +1,73 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using std.regex as re;
+using std.vec;
+
+const DATA_FILE :string = "2023/day04/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            if rem := re.find(`^.*(\d+): ([\d ]+) \| ([\d ]+)$`, card) then {
+                winners: rem[2].split(" ", false).set(),
+                chances: rem[3].split(" ", false).set()
+            } end
+            for card in file.read_to_string(_path_).split("\n", false)
+        ]
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        for _, card in data then
+            var count :int = (card.chances & card.winners).len;
+            if count >< 0 do continue;
+            elif count >< 1 do result += 1;
+            else result += 1 <- (count -1); end
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        println(data.len);
+        var copies :table = {:};
+        for i, card in data then
+            var count :int = (card.chances & card.winners).len;
+            for _ in [0:.copies.get(i, 0) +1] then
+                for j in [1:.count +1] then
+                    var ncard = i + j;
+                    if not [0:.data.len].has(ncard) do break2; end
+                    copies[ncard] = copies.get(ncard, 0) +1;
+                end
+            end
+        end
+
+        [0:.data.len].reduce(fn(a, e) then
+            a + 1 + copies.get(e, 0)
+        end, 0)
+    end
+end
+
+fn main() void then
+    println("Hello, Day 04!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

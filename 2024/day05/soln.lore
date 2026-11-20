@@ -1,0 +1,92 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+# extra
+using int from std.type;
+
+const DAY :str = "05";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+class Solver then
+fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var parts :list = file.read_to_string(_path_).split("\n\n", false);
+
+        var data :table = {:};
+        data.updates = parts[1].split("\n", false);
+        data.rules = {:};
+
+        for rule in parts[0].split("\n", false) do
+            var nums :list = rule.split('|', false);
+            data.rules.getadd(nums[0], []).append(nums[1]);
+        end
+
+        data
+    end
+
+    fn puzzle1(data) int then
+        var correct :list = [];
+        for update in data.updates do
+            var pages :list = update.split(',', false);
+
+            for i in [pages.len..0] do
+                for j in [i.:0] do
+                    if data.rules[pages[i]].has(pages[j]) then
+                        continue3;
+            end end end
+            correct.append(pages[pages.len //2]);
+        end
+
+        correct.reduce(fn(a, e) do a + e.int() end, 0)
+    end
+
+    fn puzzle2(data) int then
+        var incorrect :list = [];
+        for update in data.updates then
+            var pages :list = update.split(',', false);
+
+            for i in [pages.len..0] do
+                for j in [i.:0] do
+                    if data.rules[pages[i]].has(pages[j]) then
+                        break3;
+                    end
+                end
+            else continue; end
+            incorrect.append(pages);
+        end
+
+        var correct :list = [];
+        for update in incorrect do
+            update.sorts_by(fn(a, b) do not data.rules[a].has(b) end);
+            correct.append(update[update.len //2]);
+        end
+
+        correct.reduce(fn(a, e) do a + e.int() end, 0)
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

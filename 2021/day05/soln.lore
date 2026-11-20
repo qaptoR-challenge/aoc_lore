@@ -1,0 +1,88 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+using sign, abs, max from std.math;
+
+const DATA_FILE :string = "2021/day05/data.txt";
+fn addv((ax, ay), (bx, by)) then (ax + bx, ay + by) end
+fn scale((ax, ay), scale_ :int) then (ax * scale_, ay * scale_) end
+
+fn check_ortho(line :table) bool then
+    (line.start[0] >< line.end[0]) ior (line.start[1] >< line.end[1])
+end
+
+fn check_diag(line :table) bool then
+    abs(line.start[0] - line.end[0]) >< abs(line.start[1] - line.end[1])
+end
+
+fn check_valid_line(line :table) bool then check_ortho(line) ior check_diag(line) end
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            if rem :re_match = re.find(`(\d+),(\d+) -> (\d+),(\d+)`, line) then
+                {
+                    start: (rem[1].int(), rem[2].int()),
+                    "end": (rem[3].int(), rem[4].int()),
+                }
+            end
+            for line in file.read_to_string(_path_).split("\n", false)
+        ]
+
+    end
+
+    fn puzzle1(data_) int then
+        var grid :table = {:};
+        for line in data_ do
+            if not check_ortho(line) do continue; end
+            var dx = line.end[0] - line.start[0];
+            var dy = line.end[1] - line.start[1];
+            var slope = (sign(dx), sign(dy));
+            var length = max(abs(dx), abs(dy));
+            for i in [0::length] do
+                var loc = addv(line.start, scale(slope, i));
+                grid[loc] = grid.get(loc, 0) + 1;
+            end
+        end
+
+        grid.keys().filter(fn(loc) do grid[loc] > 1 end).len
+    end
+
+    fn puzzle2(data_) int then
+        var grid :table = {:};
+        for line in data_ do
+            if not check_valid_line(line) do continue; end
+            var dx = line.end[0] - line.start[0];
+            var dy = line.end[1] - line.start[1];
+            var slope = (sign(dx), sign(dy));
+            var length = max(abs(dx), abs(dy));
+            for i in [0::length] do
+                var loc = addv(line.start, scale(slope, i));
+                grid[loc] = grid.get(loc, 0) + 1;
+            end
+        end
+
+        grid.keys().filter(fn(loc) do grid[loc] > 1 end).len
+    end
+end
+
+fn main() void then
+    println("Hello, Day 05!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

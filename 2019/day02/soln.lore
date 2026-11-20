@@ -1,0 +1,86 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+
+const DATA_FILE :string = "2019/day02/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [val.int() for val in file.read_to_string(_path_).split(',', false)]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var program :list = data_.copy(true);
+        program[1] = 12;
+        program[2] = 2;
+
+        var counter :int = 0;
+        until counter >< -1 do
+            counter = this.execute(program, counter);
+        end
+
+        program[0]
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 0;
+        var target :int = 19690720;
+
+        for i in [0:.100] do
+            for j in [0:.100] do
+                var program :list = data_.copy(true);
+                var counter :int = 0;
+                program[1] = i;
+                program[2] = j;
+                until counter >< -1 do
+                    counter = this.execute(program, counter);
+                end
+                if program[0] >< target do
+                    result = 100 * i + j;
+                    breakn;
+                end
+            end
+        end
+
+        result
+    end
+
+    fn execute(p_ :list, c_ :int) int then
+        var instruction :int = p_[c_];
+        return match instruction then
+            1 do
+                var mem1 = p_[p_[c_ +1]];
+                var mem2 = p_[p_[c_ +2]];
+                p_[p_[c_ +3]] = mem1 + mem2;
+                c_ + 4
+            end
+            2 do
+                var mem1 = p_[p_[c_ +1]];
+                var mem2 = p_[p_[c_ +2]];
+                p_[p_[c_ +3]] = mem1 * mem2;
+                c_ + 4
+            end
+            19 do -1 end
+            _ do -1 end
+        end;
+    end
+end
+
+fn main() void then
+    println("Hello, Day 02!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

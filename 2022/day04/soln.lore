@@ -1,0 +1,70 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using std.regex as re;
+
+const DATA_FILE :string = "2022/day04/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            if m :re_match = re.find(`(\d+)-(\d+),(\d+)-(\d+)`, line) then
+                ( (m[1].int(), m[2].int()), (m[3].int(), m[4].int()) )
+            end
+            for line in file.read_to_string(_path_).split("\n", false)
+        ]
+    end
+
+    fn puzzle1(data_) int then
+        var result :int = 0;
+        for (r, s) in data_ do
+            var left :bool = r.x << s.x and s.y << r.y;
+            var right :bool = s.x << r.x and r.y << s.y;
+            if left ior right do result += 1; end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_) int then
+        var result :int = 0;
+        for (r, s) in data_ do
+            var lleft :bool = r.x << s.x and s.x << r.y;
+            var lright :bool = r.x << s.y and s.y << r.y;
+            var rleft :bool = s.x << r.x and r.x  << s.y;
+            var rright :bool = s.x << r.y and r.y  << s.y;
+            if lleft ior lright ior rleft ior rright then result += 1; end
+        end
+
+        result
+    end
+
+    fn get_priority(chr :str) int then
+        var uni = chr.lower().uni();
+        var p = uni - 0x60;
+        if chr.lower() <> chr do p += 26; end
+
+        p
+    end
+end
+
+fn main() void then
+    println("Hello, Day 04!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2:table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

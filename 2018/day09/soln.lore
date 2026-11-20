@@ -1,0 +1,64 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+using max from std.math;
+using CircleDLL from "types/circledll.lore";
+
+const DATA_FILE :string = "2018/day09/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content = file.read_to_string(_path_);
+
+        var rem :re_match = re.find(`^([0-9]+) players; .* ([0-9]+) points`, content).?;
+        { players: rem[1].int(), points: rem[2].int() }
+    end
+
+    fn puzzle1(data_ :table) int then
+        this.play_game(data_.players, data_.points)
+    end
+
+    fn puzzle2(data_ :list) int then
+        this.play_game(data_.players, data_.points *100) 
+    end
+
+    fn play_game(players_ :int, points_ :int) int then
+        var scores :table = {:};
+        for i in [0:.players_] do scores[i] = 0; end
+
+        var circle := CircleDLL();
+        circle.insert_right(0);
+        for marble in [1::points_] do
+            var curr_player = marble %% players_;
+            if marble %% 23 >< 0 do
+                circle.rotate(-7);
+                scores[curr_player] += marble + circle.remove(false);
+            else
+                circle.rotate(1);
+                circle.insert_right(marble);
+            end
+        end
+
+        scores.values().reduce(max)
+    end
+end
+
+fn main() void then
+    println("Hello, Day 09!\n");
+
+    var solver = Solver();
+    var data :table = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

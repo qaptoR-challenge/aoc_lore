@@ -1,0 +1,83 @@
+using print, println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using prod from std.iter;
+
+const DATA_FILE :string = "2019/day08/data.txt";
+const SIZE :table = { x: 25, y: 6 };
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var content :str = file.read_to_string(_path_).trim_right();
+
+        var data :table = {:};
+        data["len_"] = SIZE.x * SIZE.y;
+        data["count"] = content.len // data.len_;
+        for i in [0:.data.count] do
+            var layer :table = {:};
+            for j, pos in prod([0:.SIZE.y], [0:.SIZE.x]) do
+                layer[pos] = content[i * data.len_ +j];
+            end
+            data[i] = layer;
+        end
+
+        data
+    end
+
+    fn puzzle1(data_ :table) int then
+        var zeroes :table = {:};
+        for layer in [0:.data_.count] do
+            zeroes[layer] = data_[layer].values().count('0');
+        end
+
+        var min_layer = zeroes.keys().reduce(fn(a, e) then
+            zeroes[a] < zeroes[e] use a else e
+        end);
+
+        var ones = data_[min_layer].values().count('1');
+        var twos = data_[min_layer].values().count('2');
+
+        ones * twos
+    end
+
+    fn puzzle2(data_ :table) int then
+        var image :table = {:};
+        for pos in prod([0:.SIZE.y], [0:.SIZE.x]) do
+            for layer in [0:.data_.count] do
+                match data_[layer][pos] do
+                    '0' do image[pos] = ' '; end
+                    '1' do image[pos] = '#'; end
+                    '2' do continue2; end
+                end
+                break;
+            end
+        end
+
+        for y in [0:.SIZE.y] do
+            for x in [0:.SIZE.x] do print(image[(y, x)]); end
+            println();
+        end
+        println();
+
+        0
+    end
+end
+
+fn main() void then
+    println("Hello, Day 08!\n");
+
+    var solver = Solver();
+    var data :table = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

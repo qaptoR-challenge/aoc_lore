@@ -1,0 +1,71 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using std.regex as re;
+using std.vec;
+
+const DATA_FILE :string = "2023/day01/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+
+        file.read_to_string(_path_).split("\n", false)
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        for line in data do
+            var first := re.find(`^.*?(\d).*$`, line).?;
+            var last := re.find(`^.*(\d).*?$`, line).?;
+            result += (first[1] + last[1]).int();
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+        var words :list = [
+            "one", "two", "three",
+            "four", "five", "six",
+            "seven", "eight", "nine",
+        ];
+        var opts :str = '|'.join(words);
+
+        var map :table = {:};
+        for i, word in words do map[word] = (i +1) as str; end
+
+        for line in data then
+            var first := re.find(`^.*?(%s|\d).*$` %opts, line).?;
+            var last := re.find(`^.*(%s|\d).*?$` %opts, line).?;
+            var num :str = "";
+            num += words.has(first[1]) use map[first[1]] else first[1];
+            num += words.has(last[1]) use map[last[1]] else last[1];
+            result += num.int();
+        end
+
+        result
+    end
+end
+
+### this is a doc string ###
+fn main() void then
+    println("Hello, Day 01!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2:table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

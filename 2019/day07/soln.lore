@@ -1,0 +1,185 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+using perm from std.iter;
+
+const DATA_FILE :string = "2019/day07/data.txt";
+
+enum Mode then
+    running,
+    waiting,
+    halted
+end
+
+class Amplifier then
+    var prog :list;
+    var input :list;
+    var output :list;
+    var ptr :int;
+    var mode :Mode;
+
+    fn init(prog_ :list) void then
+        this.prog = prog_.copy(true);
+        this.input = [];
+        this.output = [];
+        this.ptr = 0;
+        this.mode = .running;
+    end
+
+    fn run() Mode then
+        this.mode = .running;
+        while this.mode >< .running do this.mode = this.execute(); end
+        this.mode
+    end
+
+    fn execute() Mode then
+        var instruction :str = (this.prog[this.ptr] as str).reverse();
+        var rem :re_match = re.find(`^(\d\d?)(\d)?(\d)?(\d)?$`, instruction);
+        var opcode :str = rem[1];
+        var modeb :str = rem[3];
+        var modec :str = rem[2];
+
+        return match opcode.reverse().int() do
+            1 do # add
+                var mem1 = modec >< '1' use this.prog[this.ptr +1] else this.prog[this.prog[this.ptr +1]];
+                var mem2 = modeb >< '1' use this.prog[this.ptr +2] else this.prog[this.prog[this.ptr +2]];
+                this.prog[this.prog[this.ptr +3]] = mem1 + mem2;
+                this.ptr += 4;
+                .running
+            end
+
+            2 do # multiply
+                var mem1 = modec >< '1' use this.prog[this.ptr +1] else this.prog[this.prog[this.ptr +1]];
+                var mem2 = modeb >< '1' use this.prog[this.ptr +2] else this.prog[this.prog[this.ptr +2]];
+                this.prog[this.prog[this.ptr +3]] = mem1 * mem2;
+                this.ptr += 4;
+                .running
+            end
+
+            3 do # input
+                var mem1 = this.prog[this.ptr +1];
+                if this.input.len >< 0 do break2 .waiting; end
+                var input = this.input.pop();
+                this.prog[mem1] = input;
+                this.ptr += 2;
+                .running
+            end
+
+            4 do # output
+                var mem1 = this.prog[this.ptr +1];
+                var output = modec >< '1' use mem1 else this.prog[mem1];
+                this.output.append(output);
+                this.ptr += 2;
+                .running
+            end
+
+            5 do # jump-if-true
+                var mem1 = modec >< '1' use this.prog[this.ptr +1] else this.prog[this.prog[this.ptr +1]];
+                var mem2 = modeb >< '1' use this.prog[this.ptr +2] else this.prog[this.prog[this.ptr +2]];
+                this.ptr = mem1 <> 0 use mem2 else 3;
+                .running
+            end
+
+            6 do # jump-if-false
+                var mem1 = modec >< '1' use this.prog[this.ptr +1] else this.prog[this.prog[this.ptr +1]];
+                var mem2 = modeb >< '1' use this.prog[this.ptr +2] else this.prog[this.prog[this.ptr +2]];
+                this.ptr = mem1 >< 0 use mem2 else 3;
+                .running
+            end
+
+            7 do # less than
+                var mem1 = modec >< '1' use this.prog[this.ptr +1] else this.prog[this.prog[this.ptr +1]];
+                var mem2 = modeb >< '1' use this.prog[this.ptr +2] else this.prog[this.prog[this.ptr +2]];
+                this.prog[this.prog[this.ptr +3]] = mem1 < mem2 use 1 else 0;
+                this.ptr += 4;
+                .running
+            end
+
+            8 do # equals
+                var mem1 = modec >< '1' use this.prog[this.ptr +1] else this.prog[this.prog[this.ptr +1]];
+                var mem2 = modeb >< '1' use this.prog[this.ptr +2] else this.prog[this.prog[this.ptr +2]];
+                this.prog[this.prog[this.ptr +3]] = mem1 >< mem2 use 1 else 0;
+                this.ptr += 4;
+                .running
+            end
+
+            _, 99 do .halted end # halt
+        end;
+    end
+end
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [val.int() for val in file.read_to_string(_path_).split(',', false)]
+    end
+
+    fn puzzle1(data_ :list) list then
+        var result :int = 0;
+        var sequences :table = {:};
+        for seq in perm([0:.5], 5) do
+            result = 0;
+            for i in [0:.5] do 
+                var amp = Amplifier(data_);
+                amp.input.extend([result, seq[i]]);
+                amp.run();
+                result = amp.output[0];
+            end
+            sequences[seq] = result;
+        end
+
+        result = sequences.keys().reduce(fn(a, e) then
+            sequences[a] > sequences[e] use a else e
+        end);
+
+        [sequences[result], result]
+    end
+
+    fn puzzle2(data_ :list) list then
+        var result;
+        var sequences :table = {:};
+        for seq in perm([5:.10], 5) do
+            var amps :list = [];
+            for _ in [0:.5] do amps.append(Amplifier(data_)); end
+            var running :Mode = .running;
+            var loop_count :int = 0;
+            result = [0];
+            while running <> .halted do
+                for i, amp in amps do
+                    amp.input.extend(result);
+                    if loop_count >< 0 do amp.input.append(seq[i]); end
+                    running = amp.run();
+                    result = amp.output.copy(true);
+                    amp.output.clear();
+                end
+                loop_count += 1;
+            end
+            sequences[seq] = result;
+        end
+
+        result = sequences.keys().reduce(fn(a, e) then
+            sequences[a] > sequences[e] use a else e
+        end);
+
+        [sequences[result], result]
+    end
+end
+
+fn main() void then
+    println("Hello, Day 07!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

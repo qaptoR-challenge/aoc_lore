@@ -1,0 +1,107 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using abs from std.math;
+
+const DATA_FILE :string = "2019/day03/data.txt";
+
+const DIRS :table = {
+    'U': (0, 1),
+    'R': (1, 0),
+    'D': (0, -1),
+    'L': (-1, 0),
+};
+
+fn addv((ax, ay), (bx, by)) tuple then (ax+bx, ay+by) end
+fn mdist((ax, ay)) int then abs(ax) + abs(ay) end
+fn sumlen(d :table) int then d[1] + d[2] end
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [val.split(',', false) for val in file.read_to_string(_path_).split('\n', false)]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var visited :table = {:};
+        var wire_id :int = 0;
+        for wire in data_ do
+            wire_id += 1;
+            var port :tuple = (0, 0);
+            for ext in wire do
+                var dir :str = ext[0];
+                var dist :int = ext[1;;-1].int();
+                for i in [0:.dist] do
+                    port = addv(port, DIRS[dir]);
+                    if visited.get(port, 0) >< 0 do
+                        visited[port] = wire_id;
+                    elif visited[port] >< wire_id do # pass
+                    else visited[port] += wire_id; end
+                end
+            end
+        end
+        var intersections :list = visited.keys().filter(fn(k) bool then
+            visited[k] >< 3
+        end);
+
+        var closest :tuple = intersections.reduce(fn(a, e) then
+            mdist(e) < mdist(a) use e else a
+        end);
+
+        println("closest: %s, mdist: %s" %[closest, mdist(closest)]);
+
+        4
+    end
+
+    fn puzzle2(data_ :list) int then
+        var visited :table = {:};
+        var wire_id :int = 0;
+        for wire in data_ do
+            wire_id += 1;
+            var port :tuple = (0, 0);
+            var steps :int = 0;
+            for ext in wire do
+                var dir = ext[0];
+                var dist :int = ext[1;;-1].int();
+                for i in [0:.dist] do
+                    steps += 1;
+                    port = addv(port, DIRS[dir]);
+                    if visited.get(port, {:}) >< {:} do
+                        visited[port] = { (wire_id): steps};
+                    elif visited[port].has(wire_id) do # pass
+                    else visited[port][wire_id] = steps; end
+                end
+            end
+        end
+
+        var intersections :list = visited.keys().filter(fn(k) bool then
+            visited[k].len >< 2
+        end);
+
+        var closest :tuple = intersections.reduce(fn(a, e) then
+            sumlen(visited[e]) < sumlen(visited[a]) use e else a
+        end);
+
+        println("closest: %s, sumlen %s" %[closest, sumlen(visited[closest])]);
+
+        4
+    end
+end
+
+fn main() void then
+    println("Hello, Day 03!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

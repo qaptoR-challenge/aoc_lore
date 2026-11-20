@@ -1,0 +1,16 @@
+using println from std.io;
+
+fn main()void then
+    
+    var x = then
+        println("printing if");
+        exit 4;
+        println("printing after");
+    else
+        println("printing else");
+    end;
+
+    println("printing ${x}");
+end
+
+main();

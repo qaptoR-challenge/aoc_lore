@@ -1,0 +1,60 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+
+const DATA_FILE :string = "2020/day03/data.txt";
+fn addv((ax, ay), (bx, by)) then (ax + bx, ay + by) end
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [row.chars() for row in file.read_to_string(_path_).split('\n', false)]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var result :int = 0;
+        var slope :tuple = (3, 1);
+        var pos :tuple = (0, 0);
+        while pos[1] < data_.len do
+            if data_[pos[1]][pos[0] % data_[0].len] >< '#' do result += 1; end
+            pos = addv(pos, slope);
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 1;
+        var slopes :list = [ (1, 1), (3, 1), (5, 1), (7, 1), (1, 2) ];
+        for slope in slopes do
+            var trees :int = 0;
+            var pos :tuple = (0, 0);
+            while pos[1] < data_.len do
+                if data_[pos[1]][pos[0] % data_[0].len] >< '#' do trees += 1; end
+                pos = addv(pos, slope);
+            end
+            result *= trees;
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 03!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result) end, 1, 300, .ms);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

@@ -1,0 +1,63 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+
+const DATA_FILE :string = "2021/day07/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [crab.int() for crab in file.read_to_string(_path_).trim().split(",", false)]
+    end
+
+    fn puzzle1(data_) int then
+        var min :int = data_.reduce(math.min);
+        var max :int = data_.reduce(math.max);
+
+        var positions :list = [];
+        for i in [min::max] do
+            var fuel :int = 0;
+            for crab in data_ do fuel += math.abs(crab - i); end
+            positions.append(fuel);
+        end
+
+        positions.reduce(math.min)
+    end
+
+    fn puzzle2(data_) int then
+        var min :int = data_.reduce(math.min);
+        var max :int = data_.reduce(math.max);
+
+        var positions :list = [];
+        for i in [min::max] do
+            var fuel :int = 0;
+            for crab in data_ do
+                var n :int = math.abs(crab - i);
+                fuel += (n * (n +1)) // 2;
+            end
+            positions.append(fuel);
+        end
+
+        positions.reduce(math.min)
+    end
+end
+
+fn main() void then
+    println("Hello, Day 07!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

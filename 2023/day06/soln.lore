@@ -1,0 +1,79 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.math;
+using std.regex as re;
+# extra
+using int from std.type;
+
+
+const DATA_FILE :string = "2023/day06/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var params :list = file.read_to_string(_path_).split("\n", false);
+        var data :table = {:};
+
+        var pattern :str = `(\d+)`;
+        var times :list = re.find_all(pattern, params[0]);
+        var dists :list = re.find_all(pattern, params[1]);
+
+        for i in [0:.times.len] then data[i] = {
+            time: times[i][0].int(), dist: dists[i][0].int()
+        }; end
+
+        data
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 1;
+        for race in data.values() then
+            var sqrt :float = math.sqrt(race.time **2 - 4 * race.dist);
+            var qn :int = int(math.floor((race.time - sqrt) / 2));
+            result *= race.time - (2 * qn) - 1;
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var time :str = "";
+        var dist :str = "";
+
+        for race in data.values() then
+            time += race.time as str;
+            dist += race.dist as str;
+        end
+
+        var t = time.int();
+        var d = dist.int();
+
+        var qn :int = int(math.floor((t - math.sqrt(t **2 - 4 * d)) / 2));
+
+        t - (2 * qn) - 1
+    end
+end
+
+fn main() void then
+    println("Hello, Day 06!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

@@ -1,0 +1,121 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2019/day05/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [val.int() for val in file.read_to_string(_path_).split(',', false)]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var program = data_.copy(true);
+        var io :table = { "in": [1], out: [] };
+
+        var ptr :int = 0;
+        until ptr >< -1 do
+            ptr = this.execute(program, ptr, io);
+        end
+
+        io.out
+    end
+
+    fn puzzle2(data_ :list) int then
+        var program = data_.copy(true);
+        var io :table = { "in": [5], out: [] };
+
+        var ptr :int = 0;
+        until ptr >< -1 do
+            ptr = this.execute(program, ptr, io);
+        end
+
+        io.out
+    end
+
+    fn execute(prog :list, ptr :int, io :table) int then
+        var instruction :str = (prog[ptr] as str).reverse();
+        var rem :re_match = re.find(`^(\d\d?)(\d)?(\d)?(\d)?$`, instruction);
+        var opcode :str = rem[1];
+        var modeb :str = rem[3];
+        var modec :str = rem[2];
+
+        return match opcode.reverse().int() do
+            1 do # add
+                var mem1 = modec >< '1' use prog[ptr +1] else prog[prog[ptr +1]];
+                var mem2 = modeb >< '1' use prog[ptr +2] else prog[prog[ptr +2]];
+                prog[prog[ptr +3]] = mem1 + mem2;
+                ptr +4
+            end
+
+            2 do # multiply
+                var mem1 = modec >< '1' use prog[ptr +1] else prog[prog[ptr +1]];
+                var mem2 = modeb >< '1' use prog[ptr +2] else prog[prog[ptr +2]];
+                prog[prog[ptr +3]] = mem1 * mem2;
+                ptr +4
+            end
+
+            3 do # input
+                var mem1 = prog[ptr +1];
+                var input = io.in.pop();
+                prog[mem1] = input;
+                ptr +2
+            end
+
+            4 do # output
+                var mem1 = prog[ptr +1];
+                var output = modec >< '1' use mem1 else prog[mem1];
+                io.out.append(output);
+                ptr +2
+            end
+
+            5 do # jump-if-true
+                var mem1 = modec >< '1' use prog[ptr +1] else prog[prog[ptr +1]];
+                var mem2 = modeb >< '1' use prog[ptr +2] else prog[prog[ptr +2]];
+                mem1 <> 0 use mem2 else ptr +3
+            end
+
+            6 do # jump-if-false
+                var mem1 = modec >< '1' use prog[ptr +1] else prog[prog[ptr +1]];
+                var mem2 = modeb >< '1' use prog[ptr +2] else prog[prog[ptr +2]];
+                mem1 >< 0 use mem2 else ptr +3
+            end
+
+            7 do # less than
+                var mem1 = modec >< '1' use prog[ptr +1] else prog[prog[ptr +1]];
+                var mem2 = modeb >< '1' use prog[ptr +2] else prog[prog[ptr +2]];
+                prog[prog[ptr +3]] = mem1 < mem2 use 1 else 0;
+                ptr +4
+            end
+
+            8 do # equals
+                var mem1 = modec >< '1' use prog[ptr +1] else prog[prog[ptr +1]];
+                var mem2 = modeb >< '1' use prog[ptr +2] else prog[prog[ptr +2]];
+                prog[prog[ptr +3]] = mem1 >< mem2 use 1 else 0;
+                ptr +4
+            end
+
+            _, 99 do -1 end # halt
+        end;
+    end
+end
+
+fn main() void then
+    println("Hello, Day 05!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

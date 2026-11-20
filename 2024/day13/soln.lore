@@ -1,0 +1,136 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+# extra
+using int from std.type;
+
+const DAY :str = "13";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+class Solver then
+    var size :tuple;
+
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            card.split('\n', false)
+            for card in file.read_to_string(_path_).split("\n\n", false)
+        ]
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        for card in data do
+            var matrix :list = card.map(fn(e) then
+                var rem := re.find(`X.(\d+), Y.(\d+)`, e).?;
+                (rem[1].int(), rem[2].int())
+            end);
+
+            var soln = @solve_system(matrix);
+            if soln.len >< 0 do continue; end
+            for i in [0:.2] do if soln[i] > 100 then continue2; end end
+            result += 3 * soln.x + soln.y;
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+        const INCREASE :int = 10_000_000_000_000;
+
+        for card in data do
+            var matrix :list = card.map(fn(e) then
+                var rem := re.find(`X.(\d+), Y.(\d+)`, e).?;
+                [rem[1].float(), rem[2].float()]
+            end);
+            for i in [0:.2] do matrix[2][i] += INCREASE; end
+
+            var soln = @solve_matrix(matrix);
+            if soln.len >< 0 then continue; end
+
+            result += 3 * soln.x + soln.y;
+        end
+
+        result
+    end
+
+    fn solve_system(matrix :list) tuple then
+        var (a, d) = matrix[0];
+        var (b, e) = matrix[1];
+        var (c, f) = matrix[2];
+
+        var denx = a*e - b*d;
+        var x = (c*e - b*f) // denx;
+        var y = (c - a*x) // b;
+
+        var soln :tuple = (x, y);
+
+        for i in [0:.2] then
+            var sum_p :int = 0;
+            for j in [0:.2] then sum_p += soln[j] * matrix[j][i]; end
+            if sum_p <> matrix[2][i] do return (); end
+        end
+
+        soln
+    end
+
+    fn solve_matrix(matrix :list) tuple then
+        var m = matrix.copy(true);
+
+        var x = matrix[0][0];
+        for i in [0:.3] do matrix[i][0] /= x; end
+
+        var y = matrix[0][1];
+        for i in [0:.3] do matrix[i][1] /= y; end
+
+        for i in [0:.3] do matrix[i][1] -= matrix[i][0]; end
+
+        y = matrix[1][1];
+        for i in [0:.3] do matrix[i][1] /= y; end
+
+        var (b, a) = matrix[1];
+        for i in [0:.3] do matrix[i][0] -= (b/a)*matrix[i][1]; end
+
+        var soln = matrix[2].copy(true);
+        for i in [0:.2] do soln[i] = math.round(soln[i]) as int; end
+        for i in [0:.2] do
+            var sum_p :int = 0;
+            for j in [0:.2] do
+                sum_p += soln[j] * (math.round(m[j][i]) as int);
+            end
+            if sum_p <> (math.round(m[2][i]) as int) then return (); end
+        end
+
+        soln.tuple()
+    end
+end
+
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

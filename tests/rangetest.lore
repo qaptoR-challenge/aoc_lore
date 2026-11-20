@@ -1,0 +1,9 @@
+using println from std.io;
+
+fn main() void then
+
+    var r :range = [10::20];
+    println("{} to {} is len: {}".format(r[0], r[-1], r.len));
+end
+
+main();

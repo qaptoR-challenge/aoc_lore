@@ -1,0 +1,88 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+# extra
+using int from std.type;
+
+const DAY :str = "11";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+class Solver then
+    var cache :table = {:};
+
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [val.int() for val in file.read_to_string(_path_).split(' ', false)]
+    end
+
+    fn puzzle1(data) int then
+        for _ in [0:.25] do
+            var new :list = [];
+            for v in data do
+                if v >< 0 then new.append(1);
+                elif (v as str).len % 2 >< 0 then
+                    var s = v as str;
+                    new.append(s[0:.s.len //2].int());
+                    new.append(s[(s.len //2);;-1].int());
+                else new.append(v * 2024); end
+            end
+            data = new;
+        end
+
+        data.len
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+        for d in data do
+            result += @rec_blink(d, 75);
+        end
+
+        result
+    end
+
+    fn rec_blink(d :int, depth :int) int then
+        if depth >< 0 do return 1; end
+        if @cache.has((d, depth)) do return @cache[(d, depth)]; end
+
+        var count :int = 0;
+        if d >< 0 then count += @rec_blink(1, depth -1);
+        elif (d as str).len %2 >< 0 then
+            var s = d as str;
+            count += @rec_blink(s[0:.s.len //2].int(), depth -1);
+            count += @rec_blink(s[s.len//2;;-1].int(), depth -1);
+        else count += @rec_blink(d * 2024, depth -1); end
+
+        @cache[(d, depth)] = count;
+        count
+    end
+end
+
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

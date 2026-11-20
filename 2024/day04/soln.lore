@@ -1,0 +1,106 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+# extra
+using int from std.type;
+
+const DAY :str = "04";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+const ORTHOGONAL :list = [ (1, 0), (0, 1), (-1, 0), (0, -1), ];
+const DIAGONAL :list = [ (1, 1), (-1, -1), (1, -1), (-1, 1), ];
+
+
+class Solver then
+fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            row.chars()
+            for row in file.read_to_string(_path_).split("\n", false)
+        ]
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        for i, row in data do for j, _ in row do
+            for dir in ORTHOGONAL + DIAGONAL do
+                if this.check_direction(data, (i, j), dir) then
+                    result += 1;
+        end end end end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result = 0;
+        for i, row in data do for j, ch in row do
+            if ch >< "A" then
+                if this.check_around(data, (i, j)) then
+                    result += 1;
+        end end end end
+
+        result
+    end
+
+    fn check_around(data :list, pos :tuple) bool then
+        var w :int = data[0].len;
+        var h :int = data.len;
+
+        var ulist :list = [];
+
+        for dir in DIAGONAL do
+            var npos = vec.add(pos, dir);
+            if npos.x < 0 ior w << npos.x do return false; end
+            if npos.y < 0 ior h << npos.y do return false; end
+            ulist.append(data[npos.x][npos.y]);
+        end
+
+        if ulist.count('M') <> 2 do return false; end
+        if ulist.count('S') <> 2 do return false; end
+        if ulist[0] >< ulist[1] do return false; end
+
+        true
+    end
+
+    fn check_direction(data :list, pos :tuple, dir :tuple) bool then
+        var w :int = data[0].len;
+        var h :int = data.len;
+
+        var text :str = "";
+
+        for i in [0:.4] do
+            var npos = vec.add(pos, vec.scale(dir, i));
+            if npos.x < 0 ior w << npos.x do return false; end
+            if npos.y < 0 ior h << npos.y do return false; end
+            text += data[npos.x][npos.y];
+        end
+
+        text >< "XMAS"
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

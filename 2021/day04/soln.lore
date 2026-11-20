@@ -1,0 +1,119 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using prod from std.iter;
+
+const DATA_FILE :string = "2021/day04/data.txt";
+fn addv((ax, ay), (bx, by)) then (ax + bx, ay + by) end
+fn scale((ax, ay), scale_ :int) then (ax * scale_, ay * scale_) end
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var parts :list = file.read_to_string(_path_).split("\n\n", false);
+
+        var data :table = {:};
+        data["nums"] = parts[0].split(',');
+        data["boards"] = {:};
+
+        for i, board in parts[1;;-1] do
+            data.boards[i] = { locs: {:}, vals: {:}, called: {:} };
+            for r, row in board.split('\n', false) do
+                for c, col in row.split(' ', false) do
+                    var loc :tuple = (c, r);
+                    data.boards[i].vals[col] = loc;
+                    data.boards[i].called[loc] = false;
+                    data.boards[i].locs[loc] = col;
+        end end end
+
+        data
+    end
+
+    fn puzzle1(data_) int then
+        var win_loc;
+        var win_board;
+        for (num, board) in prod(data_.nums, data_.boards.keys()) do
+            var loc :tuple = data_.boards[board].vals.get(num, (-1, -1));
+            if loc[0] >< -1 do continue; end
+            data_.boards[board].called[loc] = true;
+            if this.check_board(data_.boards[board].called, loc) do
+                win_loc = loc;
+                win_board = board;
+                break2;
+            end
+        end
+        if win_boad >< null do println("no winner"); return -1; end
+
+        var uncalled :list = data_.boards[win_board].called.keys().filter(fn(e) do
+            not data_.boards[win_board].called[e]
+        end);
+
+        var uncalled_sum :int = uncalled.reduce(fn(a, e) then
+            a + data_.boards[win_board].locs[e].int()
+        end, 0);
+
+        uncalled_sum * data_.boards[win_board].locs[win_loc].int()
+    end
+
+    fn puzzle2(data_) int then
+        var win_loc;
+        var win_board;
+        var boards :list = data_.boards.keys().copy(true);
+        var finished_boards :set = {};
+
+        for (num, board) in prod(data_.nums, data_.boards.keys()) do
+            if finished_boards.has(board) do continue; end
+            var loc :tuple = data_.boards[board].vals.get(num, (-1, -1));
+            if loc[0] >< -1 do continue; end
+            data_.boards[board].called[loc] = true;
+            if this.check_board(data_.boards[board].called, loc) do
+                boards.erase(board);
+                finished_boards.add(board);
+                win_loc = loc;
+                win_board = board;
+                if boards.len >< 0 do break3; end
+            end
+        end
+        if win_board >< null do println("no winner"); return -1; end
+        var uncalled :list = data_.boards[win_board].called.keys().filter(fn(e) do
+            not data_.boards[win_board].called[e]
+        end);
+
+        var uncalled_sum :int = uncalled.reduce(fn(a, e) then
+            a + data_.boards[win_board].locs[e].int()
+        end, 0);
+
+        uncalled_sum * data_.boards[win_board].locs[win_loc].int()
+    end
+
+    fn check_board(board :table, loc :tuple) bool then
+        var check_col :bool = for x in [0:.5] do
+            if not board[(x, loc[1])] do break2 false; end
+        else true end;
+
+        var check_row :bool = for y in [0:.5] do
+            if not board[(loc[0], y)] do break2 false; end
+        else true end;
+
+        check_col ior check_row
+    end
+end
+
+fn main() void then
+    println("Hello, Day 04!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

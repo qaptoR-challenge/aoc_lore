@@ -1,0 +1,74 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+
+const DATA_FILE :string = "2022/day02/data.txt";
+const EDGES :set = { (1, 3), (2, 1), (3, 2) };
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [(r[0], r[-1]) for r in file.read_to_string(_path_).split("\n", false)]
+    end
+
+    fn puzzle1(data_) int then
+        var result :int = 0;
+        for (opp, strat) in data_ do
+            var o = this.get_score(opp);
+            var s = this.get_score(strat);
+            result += s;
+            result += if s >< o do 3
+            elif EDGES.has((s, o)) do 6
+            else 0 end;
+        end
+
+        result
+    end
+
+    fn puzzle2(data_) int then
+        var result :int = 0;
+        for (opp, strat) in data_ do
+            var o = this.get_score(opp, true);
+            var s = this.get_score(strat, true);
+            result += s;
+            result += match s then
+                0 do ((o -2) % 3) +1 end
+                3 do o end
+                6 do (o % 3) +1 end
+            end;
+        end
+
+        result
+    end
+
+    fn get_score(strat :str, part :bool = false) int then
+        return match strat then
+            'A' do 1 end
+            'B' do 2 end
+            'C' do 3 end
+            'X' do part use 0 else 1 end
+            'Y' do part use 3 else 2 end
+            'Z' do part use 6 else 3 end
+        end;
+    end
+end
+
+fn main() void then
+    println("Hello, Day 02!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2:table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

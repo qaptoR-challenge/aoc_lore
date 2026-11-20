@@ -1,0 +1,72 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.math;
+using std.regex as re;
+# extra
+using int from std.type;
+
+const DAY :str = "01";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            row.split(" ", false)
+            for row in file.read_to_string(_path_).split("\n", false)
+        ]
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        var lists :tuple = ([], []);
+        for row in data do
+            lists.x.append(row[0].int());
+            lists.y.append(row[1].int());
+        end
+
+        lists.x.sorts();
+        lists.y.sorts();
+
+        for i in [0:.lists.x.len] do result += math.abs(lists.x[i] - lists.y[i]); end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result = 0;
+        var lists :tuple = ([], []);
+        for row in data do
+            lists.x.append(row[0].int());
+            lists.y.append(row[1].int());
+        end
+
+        for i in [0:.lists.x.len] do result += lists.x[i] * lists.y.count(lists.x[i]); end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

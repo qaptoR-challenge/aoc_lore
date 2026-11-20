@@ -1,0 +1,72 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+
+const DATA_FILE :string = "2019/day06/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        {
+            key: val
+            for (val, key) in [
+                row.split(')', false)
+                for row in file.read_to_string(_path_).split('\n', false)
+            ]
+        }
+    end
+
+    fn puzzle1(data_ :table) int then
+        var result :int = 0;
+
+        for obj in data_ do
+            var mass = data_[obj];
+            result += 1;
+            until mass >< "COM" do
+                result += 1;
+                mass = data_[mass];
+            end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :table) int then
+        var path :table = {:};
+        var i :int = 0;
+        var mass = data_["YOU"];
+        until mass >< "COM" do
+            i += 1;
+            path[mass] = i;
+            mass = data_[mass];
+        end
+
+        i = 0;
+        mass = data_["SAN"];
+        while not path.has(mass) and mass <> "COM" do
+            i += 1;
+            mass = data_[mass];
+
+        end
+
+        i + path[mass] -1
+    end
+end
+
+fn main() void then
+    println("Hello, Day 06!\n");
+
+    var solver = Solver();
+    var data :table = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

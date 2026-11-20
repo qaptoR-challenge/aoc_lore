@@ -1,0 +1,11 @@
+
+using println from std.io;
+
+
+fn main() void then
+    var x :int = 3;
+    x <= 0;
+    println(x);
+end
+
+main();

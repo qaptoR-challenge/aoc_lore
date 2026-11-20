@@ -1,0 +1,98 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2020/day04/data.txt";
+
+const fields :list = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid", "cid"];
+const eye_colors :list = ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"];
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        file.read_to_string(_path_).split("\n\n", false)
+    end
+
+    fn puzzle1(data_ :list) int then
+        var result :int = 0;
+        var reqd :list = fields[0;;-2];
+
+        for pp in data_ do
+            var rems :list = re.find_all(`\w{3}:#?\w+`, pp);
+            var ppd :table = {
+                key: value for field in rems
+                for (key, value) in |[field[0].split(':')]|
+            };
+            for r in reqd do
+                if not ppd.has(r) do break2; end
+            else result += 1; end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 0;
+        var reqd :list = fields[0;;-2];
+
+        for pp in data_ do
+            var rems :list = re.find_all(`\w{3}:#?\w+`, pp);
+            var ppd :table = {
+                key: value for field in rems
+                for (key, value) in |[field[0].split(':')]|
+            };
+            for r in reqd is lp do
+                if not ppd.has(r) do break lp; end
+                match r then
+                    "byr" do if not (
+                        ppd[r].len >< 4 and 1920 << ppd[r].int() and ppd[r].int() << 2002
+                    ) do break lp; end end
+
+                    "iyr" do if not (
+                        ppd[r].len >< 4 and 2010 << ppd[r].int() and ppd[r].int() << 2020
+                    ) do break lp; end end
+
+                    "eyr" do if not (
+                        ppd[r].len >< 4 and 2020 << ppd[r].int() and ppd[r].int() << 2030
+                    ) do break lp; end end
+
+                    "hgt" do
+                        var rem = re.find(`^(\d+)(cm|in)$`, ppd[r]);
+                        if rem >< null do break lp; end
+                        var hgt :int = rem.?[1].int();
+                        match rem.?[2] then
+                            "cm" do if not (150 << hgt and hgt << 193) do break lp; end end
+                            "in" do if not (59 << hgt and hgt << 76) do break lp; end end
+                        end
+                    end
+
+                    "hcl" do if not re.test(`^#[0-9a-f]{6}$`, ppd[r]) do break lp; end end
+                    "ecl" do if not eye_colors.has(ppd[r]) do break lp; end end
+                    "pid" do if not re.test(`^\d{9}$`, ppd[r]) do break lp; end end
+                end
+            else result += 1; end
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 04!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

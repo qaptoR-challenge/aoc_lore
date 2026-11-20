@@ -1,0 +1,80 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using std.regex as re;
+
+const DATA_FILE :string = "2022/day05/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var chunks :list = file.read_to_string(_path_).split("\n\n", false);
+        var data :table = {:};
+
+        var stacks :table = {:};
+        for stack in chunks[0].split("\n", false).reverse() do
+            var rems :list = re.find_all(`(?: {3}|(?:\[(\w)\]))\s?`, stack);
+            for j, rem in rems do
+                if rem[1] <> null do
+                    stacks[j+1] = stacks.get(j+1, []).append(rem[1]);
+                end
+            end
+        end
+        data.stacks = stacks;
+
+        data.moves = [
+            if r := re.find(`^move (\d+) from (\d+) to (\d+)$`, row) then
+                { count: r[1].int(), "from": r[2].int(), to: r[3].int() }
+            end
+            for row in chunks[1].split("\n", false)
+        ];
+
+        data
+    end
+
+    fn puzzle1(data_) int then
+        for move in data_.moves do
+            for _ in [0:.move.count] do
+                data_.stacks[move.to].append(data_.stacks[move.from].pop());
+        end end
+
+        var keys :list = data_.stacks.keys();
+        keys.sorts();
+        keys.reduce(fn(a, e) then
+            data_.stacks[e].len > 0 use a + data_.stacks[e][-1] else ""
+        end, "")
+    end
+
+    fn puzzle2(data_) int then
+        for move in data_.moves do
+            data_.stacks[move.to] += data_.stacks[move.from][-move.count;;-1];
+            data_.stacks[move.from].resize(data_.stacks[move.from].len - move.count);
+        end
+
+        var keys :list = data_.stacks.keys();
+        keys.sorts();
+        keys.reduce(fn(a, e) then
+            data_.stacks[e].len > 0 use a + data_.stacks[e][-1] else ""
+        end, "")
+    end
+end
+
+fn main() void then
+    println("Hello, Day 05!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2:table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

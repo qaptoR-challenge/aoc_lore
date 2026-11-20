@@ -1,0 +1,141 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2018/day07/data.txt";
+
+fn revsort(a, b) bool do a > b end
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var data :table = {:};
+        for line in file.read_to_string(_path_).split('\n', false) do
+            var rem :re_match = re.find(`^Step ([A-Z]) .* step ([A-Z])`, line).?;
+            var head :str = rem[1];
+            var tail :str = rem[2];
+            var heads = data.getadd(head, { children: [], parents: [] });
+            heads.children.append(tail);
+            var tails = data.getadd(tail, { children: [], parents: [] });
+            tails.parents.append(head);
+        end
+
+        data
+    end
+
+    fn puzzle1(data_ :table) str then
+        var result :str = "";
+
+        var queue :set = {};
+        var leaves :set = {};
+        for v in data_.values() do for child in v.children do leaves.add(child); end end
+        for k in data_.keys() do if not leaves.has(k) do queue.add(k); end end
+
+        var trav;
+        var visited :set = {};
+
+        while not queue.is_empty() do
+            var pq = queue.list();
+            pq.sorts_by(revsort);
+            while true do
+                trav = pq.pop();
+                var parents :list = data_[trav].parents;
+                var flag :bool = true;
+                for parent in parents do flag &&= visited.has(parent); end
+                if flag do break2; end
+            end
+            queue.erase(trav);
+            visited.add(trav);
+            result += trav;
+            for child in data_[trav].children do
+                if not visited.has(child) do queue.add(child); end
+            end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :table) int then
+        var result :int = 0;
+
+        var queue :set = {};
+        var leaves :set = {};
+        for v in data_.values() do for child in v.children do leaves.add(child); end end
+        for k in data_.keys() do if not leaves.has(k) do queue.add(k); end end
+
+        var visited :set = {};
+        var workers :list = [];
+        var busy :list = [];
+        for i in [0:.5] do workers.append({ task: "", time: 0 }); end
+
+        var string_ :str = "";
+        while not busy.is_empty() ior not queue.is_empty() do
+            var unready :set = {};
+            while true do
+                if workers.is_empty() do break2; end
+                if queue.is_empty() do break2; end
+                var pq :list = queue.list();
+                for k in unready do pq.erase(k); end
+                if pq.is_empty() do break2; end
+                pq.sorts_by(revsort);
+                var worker = workers.pop();
+                while true do
+                    worker.task = pq.pop();
+                    if worker.task >< null do break2; end
+                    var parents = data_[worker.task].parents;
+                    var flag = true;
+                    for parent in parents do flag &&= visited.has(parent); end
+                    if flag do break2;
+                    else unready.add(worker.task); end
+                end
+                if worker.task <> null do
+                    worker.time = worker.task.uni() -4;
+                    queue.erase(worker.task);
+                    busy.append(worker);
+                else workers.append(worker); end
+            end
+            var remove :list = [];
+            var completed :list = [];
+            for worker in busy do
+                worker.time -= 1;
+                if worker.time >< 0 do
+                    visited.add(worker.task);
+                    completed.append(worker.task);
+                    for child in data_[worker.task].children do
+                        if not visited.has(child) do queue.add(child); end
+                    end
+                    remove.append(worker);
+                end
+            end
+            completed.sorts();
+            for task in completed do string_ += task; end
+            for worker in remove do
+                busy.erase(worker);
+                workers.append(worker);
+            end
+            result += 1;
+        end
+
+        println(string_);
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 07!\n");
+
+    var solver = Solver();
+    var data :table = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

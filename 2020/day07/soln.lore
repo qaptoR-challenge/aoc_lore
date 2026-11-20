@@ -1,0 +1,76 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2020/day07/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var template :table = { children: {:}, parents: {} };
+
+        var data :table = {:};
+        for line in file.read_to_string(_path_).split("\n", false) do
+            var parts :list = line.split(" contain ", false);
+            var parent :str = re.find(`(.*) bags`, parts[0]).?[1];
+            for child in parts[1].split(", ", false) do
+                if rem :re_match = re.find(`(\d+) (.*) bags?`, child) do
+                    data.getadd(parent, template.copy(true)).children[rem[2]] = rem[1].int();
+                    data.getadd(rem[2], template.copy(true)).parents.add(parent);
+        end end end
+
+        data
+    end
+
+    fn puzzle1(data_ :table) int then
+        var result :int = 0;
+        var current :str = "shiny gold";
+
+        var queue :list = [current];
+        var visited :set = {};
+
+        until queue.is_empty() do
+            current = queue.pull();
+            for parent in data_[current].parents do
+                if not visited.has(parent) do
+                    queue.append(parent);
+                    visited.add(parent);
+                    result += 1;
+        end end end
+
+        result
+    end
+
+    fn puzzle2(data_ :table) int then
+        this.rec_count(data_, "shiny gold")
+    end
+
+    fn rec_count(data :table, current :str) int then
+        var result :int = 0;
+        for child, count in data[current].children do
+            result += count + count * this.rec_count(data, child);
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 07!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

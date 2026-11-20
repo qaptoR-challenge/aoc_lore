@@ -1,0 +1,54 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using window from std.iter;
+using add from std.math;
+
+const DATA_FILE :string = "2021/day01/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [val.int() for val in file.read_to_string(_path_).split("\n", false)]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var result :int = 0;
+        for (a, b) in window(data_) do
+            if a < b do result += 1; end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 0;
+        var prev :int = 2 ** 63 -1;
+        for w in window(data_, 3) do
+            var sum :int = w.reduce(add);
+            if prev < sum do result += 1; end
+            prev = sum;
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 01!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

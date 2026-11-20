@@ -1,0 +1,105 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using std.regex as re;
+using std.vec;
+
+const DATA_FILE :string = "2022/day08/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+
+        var data :table = {:};
+        var lines :list = file.read_to_string(_path_).split("\n", false);
+        data.size = (lines[0].len, lines.len);
+
+        for i, line in lines do
+            for j, tree in line.chars() do data[(j, i)] = tree; end
+        end
+
+        data
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        for y in [0:.data.size.y] do
+            for x in [0:.data.size.x] do
+                if 0 <> x and x <> data.size.x -1
+                and 0 <> y and y <> data.size.y -1 then
+                    if this.scan(data, (x, y)) do result += 1; continue; end
+                end
+                result += 1;
+        end end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var scores :table = {:};
+        for y in [0:.data.size.y] then
+            for x in [0:.data.size.x] then
+                var pos :tuple = (x, y);
+                scores[pos] = this.score(data, pos);
+            end
+        end
+
+        scores.values().reduce(math.max)
+    end
+
+    fn scan(data :table, pos :tuple) bool then
+        var visible :bool = true;
+        for dir in [(0, -1), (0, 1), (-1, 0), (1, 0)] then
+            visible = true;
+            var i :int = 1;
+            while true do
+                var new_pos = vec.add(pos, vec.scale(dir, i));
+                if not data.has(new_pos) do break2; end
+                visible &&= data[new_pos] < data[pos];
+                i+= 1;
+            end
+            if visible do break2; end
+
+        end
+
+        visible
+    end
+
+    fn score(data :table, pos :tuple) bool then
+        var tree_score :int = 1;
+        for dir in [(0, -1), (0, 1), (-1, 0), (1, 0)] then
+            var i :int = 1;
+            var dir_score :int = 0;
+            while true do
+                var new_pos = vec.add(pos, vec.scale(dir, i));
+                if not data.has(new_pos) do break2; end
+                dir_score += 1;
+                if data[new_pos] >> data[pos] do break2; end
+                i+= 1;
+            end
+            tree_score *= dir_score;
+        end
+
+        tree_score
+    end
+end
+
+fn main() void then
+    println("Hello, Day 08!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2:table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

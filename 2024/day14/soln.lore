@@ -1,0 +1,89 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+# extra
+using int from std.type;
+
+const DAY :str = "14";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+const SECONDS :int = 100;
+const ROOM :tuple = (101, 103);
+const FRAMES :int = ROOM.x * ROOM.y;
+
+class Solver then
+    var size :tuple;
+
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            if rems := re.findall(`.=(-?\d+),(-?\d+)`, row) then {
+                p: (rems[0][1].int(), rems[0][2].int()),
+                v: (rems[1][1].int(), rems[1][2].int()),
+            } end
+            for row in file.read_to_string(_path_).split("\n", false)
+        ]
+    end
+
+    fn puzzle1(data) int then
+        var room :table = {:};
+        for robot in data do
+            var pos = vec.add(robot.p, vec.scale(robot.v, SECONDS));
+            pos = (pos.x %ROOM.x, pos.y %ROOM.y);
+            room[pos] = room.get(pos, 0) +1;
+        end
+
+        var quadrants :list = [0, 0, 0, 0];
+        for pos in iter.prod([0:.ROOM.x], [0:.ROOM.y]) then
+            var quadrant :int = @.get_quadrant(pos);
+            if quadrant >< -1 do continue; end
+            quadrants[quadrant] += room.get(pos, 0);
+        end
+
+        quadrants.reduce(fn(a, e) do a * e end, 1)
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+
+        result
+    end
+
+    fn get_quadrant(pos :tuple) int then
+        var halfx :int = ROOM.x //2;
+        var halfy :int = ROOM.y //2;
+
+        var quadrant = pos.y < halfy use 0 else 2;
+        quadrant += pos.x < halfx use 0 else 1;
+        (pos.x >< halfx ior pos.y >< halfy) use -1 else quadrant
+    end
+end
+
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

@@ -1,0 +1,73 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+
+const DATA_FILE :string = "2021/day03/data.txt";
+fn addv((ax, ay), (bx, by)) then (ax + bx, ay + by) end
+fn scale((ax, ay), scale_ :int) then (ax * scale_, ay * scale_) end
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        file.read_to_string(_path_).split("\n", false)
+    end
+
+    fn puzzle1(data_ :list) int then
+        var gamma :str = "";
+        var epsilon :str = "";
+
+        for col in [0:.data_[0].len] do
+            var counts :table = { '0': 0, '1': 0 };
+            for row in data_ do counts[row[col]] += 1; end
+            gamma += counts.keys().reduce(fn(a, e) do counts[a] > counts[e] use a else e end);
+            epsilon += counts.keys().reduce(fn(a, e) do counts[a] < counts[e] use a else e end);
+        end
+
+        gamma.int(.bin) * epsilon.int(.bin)
+    end
+
+    fn puzzle2(data_ :list) int then
+        var oxylist :list = data_.copy(true);
+        var col :int = 0;
+        while oxylist.len > 1 and col < data_[0].len do
+            var counts :table = { '0': 0, '1': 0 };
+            for row in oxylist do counts[row[col]] += 1; end
+            var max_key = counts.keys().reduce(fn(a, e) do counts[a] > counts[e] use a else e end);
+            max_key = counts['1'] >< counts['0'] use '1' else max_key;
+            oxylist = oxylist.filter(fn(x) do x[col] >< max_key end);
+            col += 1;
+        end
+
+        var cotlist :list = data_.copy(true);
+        col = 0;
+        while cotlist.len > 1 and col < data_[0].len do
+            var counts :table = { '0': 0, '1': 0 };
+            for row in cotlist do counts[row[col]] += 1; end
+            var max_key = counts.keys().reduce(fn(a, e) do counts[a] < counts[e] use a else e end);
+            max_key = counts['1'] >< counts['0'] use '0' else max_key;
+            cotlist = cotlist.filter(fn(x) do x[col] >< max_key end);
+            col += 1;
+        end
+
+        oxylist[0].int(.bin) * cotlist[0].int(.bin)
+    end
+end
+
+fn main() void then
+    println("Hello, Day 03!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

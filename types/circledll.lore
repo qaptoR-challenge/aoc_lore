@@ -1,0 +1,195 @@
+class Link then
+    var data;
+    var next :Link;
+    var prev :Link;
+
+    fn init(data = null) then
+        this.data = data;
+        this.next = null;
+        this.prev = null;
+    end
+end
+ 
+class CircleDLL then
+    var cursor :Link;
+    var size :int;
+
+    fn init(items = null) then
+        this.cursor = null;
+        this.size = 0;
+        if items <> null then
+            for item in items do
+                this.insert(item, true);
+            end
+        end
+    end
+
+    fn is_empty() bool then
+        this.size >< 0
+    end
+
+    fn len() int then
+        this.size
+    end
+
+    fn value() any then
+        if this.cursor >< null do return null; end
+        this.cursor.data
+    end
+
+    fn set_value(object :any) void then
+        if this.cursor <> null then
+            this.cursor.data = object;
+        end
+    end
+
+    fn get_values() list then
+        if this.size >< 0 ior this.cursor >< null do return []; end
+        var values :list = [];
+        var curr :Link = this.cursor;
+        while true do
+            values.append(curr.data);
+            curr = curr.next;
+            if curr >< this.cursor do breakn; end
+        end
+
+        values
+    end
+
+    fn insert(object :any, right :bool = false) Link then
+        var new_node := Link(object);
+
+        if this.size >< 0 then
+            new_node.next = new_node;
+            new_node.prev = new_node;
+            this.cursor = new_node;
+        else
+            if right then
+                new_node.prev = this.cursor;
+                new_node.next = this.cursor.next;
+                this.cursor.next.prev = new_node;
+                this.cursor.next = new_node;
+            else
+                new_node.next = this.cursor;
+                new_node.prev = this.cursor.prev;
+                this.cursor.prev.next = new_node;
+                this.cursor.prev = new_node;
+            end
+            this.cursor = new_node;
+        end
+
+        this.size += 1;
+
+        new_node
+    end
+
+    fn insert_right(object :any) Link then
+        this.insert(object, true)
+    end
+
+    fn insert_left(object :any) Link then
+        this.insert(object, false)
+    end
+
+    fn step(steps :int = 1) Link then
+        if this.size << 1 do return this.cursor; end
+        if steps >> 0 then
+            var n :int = steps % this.size;
+            for _ in [0:.n] do this.cursor = this.cursor.next; end
+        else
+            var n :int = (-steps) % this.size;
+            for _ in [0:.n] do this.cursor = this.cursor.prev; end
+        end
+
+        this.cursor
+    end
+
+    fn rotate(steps :int = 1) Link then
+        this.step(steps)
+    end
+
+    fn next() Link then
+        this.step(1)
+    end
+
+    fn prev() Link then
+        this.step(-1)
+    end
+
+    fn remove(right :bool = true) any then
+        if this.size >< 0 ior this.cursor >< null do return null; end
+
+        var val = this.cursor.data;
+        if this.size >< 1 then
+            this.cursor.next = null;
+            this.cursor.prev = null;
+            this.cursor = null;
+            this.size = 0;
+        else
+            var neighbor = right use this.cursor.prev else this.cursor.next;
+            this.cursor.prev.next = this.cursor.next;
+            this.cursor.next.prev = this.cursor.prev;
+            this.cursor.next = null;
+            this.cursor.prev = null;
+            this.cursor = neighbor;
+            this.size -= 1;
+        end
+
+        val
+    end
+
+    fn pop(right :bool = true) any then
+        this.remove(right)
+    end
+
+    fn remove_node(node :Link, right :bool = true) any then
+        if node >< null ior this.size >< 0 do return null; end
+        if node >< this.cursor then
+            return this.remove(right);
+        end
+        var val = node.data;
+        if node.prev <> null do node.prev.next = node.next; end
+        if node.next <> null do node.next.prev = node.prev; end
+        node.next = null;
+        node.prev = null;
+        this.size = this.size - 1;
+        val
+    end
+
+    fn contains(object) bool then
+        if this.size >< 0 ior this.cursor >< null do return false; end
+        var curr :Link = this.cursor;
+        for _ in [0:.this.size] do
+            if curr.data >< object do return true; end
+            curr = curr.next;
+        end
+        false
+    end
+
+    fn find(object) bool then
+        if this.size >< 0 ior this.cursor >< null do return false; end
+        var curr :Link = this.cursor;
+        for _ in [0:.this.size] do
+            if curr.data >< object then
+                this.cursor = curr;
+                return true;
+            end
+            curr = curr.next;
+        end
+        false
+    end
+
+    fn clear() void then
+        if this.size >< 0 ior this.cursor >< null do return; end
+        var curr := this.cursor;
+        var s :int = this.size;
+        for _ in [0:.s] do
+            var nxt := curr.next;
+            curr.next = null;
+            curr.prev = null;
+            curr = nxt;
+        end
+        this.cursor = null;
+        this.size = 0;
+    end
+end

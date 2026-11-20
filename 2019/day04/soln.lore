@@ -1,0 +1,72 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2019/day04/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [val.int() for val in file.read_to_string(_path_).split('-', false)]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var result :int = 0;
+        for i in [data_[0]:.data_[1]] do
+            var str_i := i as str;
+            if not re.test(`(\d)\1`, str_i) do continue; end
+
+            var indices = [[0:.str_i.len]];
+            var dec = indices.reduce(fn(a, e) do
+                a <> e -1 ior str_i.uni(e) < str_i.uni(e -1) use a else e
+            end);
+            if dec <> str_i.len -1 do continue; end
+
+            result += 1;
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 0;
+        for i in [data_[0]::data_[1]] do
+            var str_i := i as str;
+            var rems1 :list = re.find_all(`(\d)\1(?!\1)`, str_i);
+            var rems2 :list = re.find_all(`(\d)\1{2,}`, str_i);
+            for rem1 in rems1 do
+                for rem2 in rems2 do
+                    if rem1.end() >< rem2.end() do continue2; end
+                else break2; end
+            else continue; end
+
+            var indices = [[0:.str_i.len]];
+            var dec = indices.reduce(fn(a, e) do
+                a <> e -1 ior str_i.uni(e) < str_i.uni(e -1) use a else e
+            end);
+            if dec <> str_i.len -1 do continue; end
+
+            result += 1;
+        end
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 04!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

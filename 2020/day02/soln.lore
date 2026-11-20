@@ -1,0 +1,61 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2020/day02/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            then
+                var r :re_match = re.find(`^(\d+)-(\d+) (\w): (\w+)$`, row).?;
+                { min: r[1].int(), max: r[2].int(), char: r[3], pwd: r[4] }
+            end
+            for row in file.read_to_string(_path_).split('\n', false)
+        ]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var result :int = 0;
+        for pkg in data_ do
+            var count :int = pkg.pwd.count(pkg.char);
+            if pkg.min << count and count << pkg.max do result += 1; end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 0;
+        for pkg in data_ do
+            var cx :str = pkg.pwd[pkg.min -1];
+            var cy :str = pkg.pwd[pkg.max -1];
+            var bx :bool = cx >< pkg.char;
+            var by :bool = cy >< pkg.char;
+            if bx xor by do result += 1; end
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 02!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result) end, 1, 300, .ms);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

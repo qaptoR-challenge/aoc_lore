@@ -1,0 +1,108 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using std.regex as re;
+using std.vec;
+using batched from std.iter as batch;
+
+const DATA_FILE :string = "2023/day05/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var data :table = {:};
+        var maps :list = file.read_to_string(_path_).split("\n\n", false);
+
+        var seeds :list = re.find_all(`\d+`, maps[0]);
+        data.seeds = [seed[0].int() for seed in seeds];
+        for map in maps[1;;-1] then
+            var lines :list = map.split("\n", false);
+            var name :str = lines[0];
+            var rem := re.find(`(\w+)-to-(\w+)`, name).?;
+            data[rem[1]] = { to: rem[2], ranges: [] };
+
+            for line in lines[1;;-1] then
+                var rs :list = [n.int() for n in line.split(" ", false)];
+                data[rem[1]].ranges.append({
+                    dr: [rs[0] :. rs[0] + rs[2]],
+                    sr: [rs[1] :. rs[1] + rs[2]],
+                });
+        end end
+
+        data
+    end
+
+    fn puzzle1(data) int then
+        var locs :list = [];
+        for seed in data.seeds then
+            var current :str = "seed";
+            var mapped = seed;
+            while current <> "location" do
+                mapped = for r in data[current].ranges then
+                    if not r.sr.has(mapped) do continue; end
+                    break r.dr[0] + mapped - r.sr[0];
+                else mapped end;
+                current = data[current].to;
+            end
+            locs.append(mapped);
+        end
+
+        locs.reduce(math.min)
+    end
+
+    fn puzzle2(data) int then
+        var queue :list = [];
+        for s in batch(data.seeds, 2) then
+            queue.append([s.x :. s.x + s.y]);
+        end
+
+        var current :str = "seed";
+        while current <> "location" do
+            var nqueue :list = [];
+            while queue.len > 0 do
+                var curr = queue.pull();
+                for r in data[current].ranges then
+                    var diff = r.dr[0] - r.sr[0];
+                    if curr.bounds(r.sr) >< .none do continue; end
+                    if curr.start < r.sr.start then
+                        queue.append(curr.with_end(r.sr.start));
+                        curr = curr.with_start(r.sr.start);
+                    end
+                    if r.sr.end < curr.end then
+                        queue.append(curr.with_start(r.sr.end));
+                        curr = curr.with_end(r.sr.end);
+                    end
+                    nqueue.append(curr.shift(diff));
+                    break;
+                else nqueue.append(curr); end
+            end
+            queue = nqueue;
+            current = data[current].to;
+        end
+
+        queue.sorts_by(fn(a, b) do a.start < b.start end);
+        queue[0].start
+    end
+end
+
+fn main() void then
+    println("Hello, Day 05!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

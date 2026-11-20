@@ -1,0 +1,65 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using abs from std.math;
+
+const DATA_FILE :string = "2021/day02/data.txt";
+fn addv((ax, ay), (bx, by)) then (ax + bx, ay + by) end
+fn scale((ax, ay), scale_ :int) then (ax * scale_, ay * scale_) end
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            do
+                var (c, i) = val.split(" ");
+                (c, i.int())
+            end
+            for val in file.read_to_string(_path_).split("\n", false)
+        ]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var pos :tuple = (0, 0);
+        for cmd in data_ do match cmd[0] then
+            "forward" do pos = addv(pos, scale((1, 0), cmd[1])); end
+            "down" do pos = addv(pos, scale((0, 1), cmd[1])); end
+            "up" do pos = addv(pos, scale((0, -1), cmd[1])); end
+        end end
+
+        abs(pos[0]) * abs(pos[1])
+    end
+
+    fn puzzle2(data_ :list) int then
+        var pos :tuple = (0, 0);
+        var aim :int = 0;
+        for cmd in data_ do match cmd[0] then
+            "down" do aim += cmd[1]; end
+            "up" do aim -= cmd[1]; end
+            "forward" do
+                pos = addv(pos, scale((1, 0), cmd[1]));
+                pos = addv(pos, scale((0, -1), aim * cmd[1]));
+        end end end
+
+        abs(pos[0]) * abs(pos[1])
+    end
+end
+
+fn main() void then
+    println("Hello, Day 02!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

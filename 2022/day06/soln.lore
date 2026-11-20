@@ -1,0 +1,61 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using std.regex as re;
+
+const DATA_FILE :string = "2022/day06/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        file.read_to_string(_path_).split("\n", false)
+    end
+
+    fn puzzle1(data_) int then
+        var pattern = this.generate_pattern(4);
+        return for line in data_ do
+            if rem = re.find(pattern, line) then break2 rem.end(); end
+        end;
+    end
+
+    fn puzzle2(data_) int then
+        var pattern = this.generate_pattern(14);
+        return for line in data_ do
+            if rem = re.find(pattern, line) then break2 rem.end(); end
+        end;
+    end
+
+    fn generate_pattern(n :int) str then
+        var pattern :str = `(?:(?!(.)\1)(.))`;
+        for i in [2::n] do
+            pattern += `(?:(?!%s)(.))`;
+            var substr :str = `\1`;
+            for j in [2::i] do
+                substr += `|\%d` %j;
+            end
+            pattern = pattern % substr;
+        end
+
+        pattern
+    end
+end
+
+fn main() void then
+    println("Hello, Day 06!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2:table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

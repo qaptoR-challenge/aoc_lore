@@ -1,0 +1,18 @@
+using println from std.io;
+
+class Test then
+    var value;
+
+    fn init() then
+        this.value = 10;
+    end
+end
+
+
+fn main() then
+    var test :Test = Test();
+
+    println(test.value);
+end
+
+main();

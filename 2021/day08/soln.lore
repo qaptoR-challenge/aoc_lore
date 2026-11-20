@@ -1,0 +1,149 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+
+const DATA_FILE :string = "2021/day08/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            then var parts :list = line.split(" | ", false);
+                { input: parts[0].split(" "), output: parts[1].split(" ") }
+            end
+            for line in file.read_to_string(_path_).split("\n", false)
+        ]
+    end
+
+    fn puzzle1(data_) int then
+        var result :int = 0;
+        var counts :table = { 2: 1, 4: 4, 3: 7, 7: 8 }; 
+
+        for value in data_ do
+            for num in value.output do
+                if counts.has(num.len) do result += 1; end
+        end end
+
+        result
+    end
+
+    fn puzzle2(data_) int then
+        var result :int = 0;
+
+        for value in data_ do
+            result += this.get_output(value);
+        end
+
+        result
+    end
+
+    fn get_output(value :table) int then
+        var nums :table = {
+            0: null,
+            1: null, 2: null, 3: null,
+            4: null, 5: null, 6: null,
+            7: null, 8: null, 9: null,
+        };
+
+        var chars :table = {
+            a: null, b: null, c: null,
+            d: null, e: null, f: null, g: null,
+        };
+
+        var fives :list = [];
+        var sixes :list = [];
+        for num in value.input do
+            match num.len then
+                2 do nums[1] = num.chars().set(); end
+                3 do nums[7] = num.chars().set(); end
+                4 do nums[4] = num.chars().set(); end
+                7 do nums[8] = num.chars().set(); end
+                5 do fives.append(num.chars().set()); end
+                6 do sixes.append(num.chars().set()); end
+            end
+        end
+
+        # get a
+        chars.a = (nums[7] - nums[1]).pop();
+
+        # determine 3
+        for five in fives do
+            if nums[1] << five do nums[3] = five; break2; end
+        end
+        fives.erase(nums[3]);
+
+        # determine 6
+        for six in sixes do
+            if not (nums[1] << six) do nums[6] = six; break2; end
+        end
+        sixes.erase(nums[6]);
+
+        # get d
+        var adg :set = (fives[0] & nums[3]) & fives[1];
+        for six in sixes do
+            var temp :set = adg - six;
+            if temp.len >< 1 do chars.d = temp.pop(); break2; end
+        end
+
+        # get g
+        chars.g = (adg - {chars.d, chars.a}).pop();
+
+        # determine 0
+        for six in sixes do
+            if not ({chars.d} << six) do nums[0] = six; break2; end
+        end
+        sixes.erase(nums[0]);
+
+        # determine 9
+        nums[9] = sixes[0];
+
+        # get e
+        chars.e = (nums[8] - nums[9]).pop();
+
+        # get b
+        chars.b = ((nums[4] - nums[1]) - {chars.d}).pop();
+
+        # get c
+        chars.c = (nums[8] - nums[6]).pop();
+
+        # determine 2
+        for five in fives do
+            if five >< {chars.a, chars.c, chars.d, chars.e, chars.g} do
+                nums[2] = five; break2;
+        end end
+        fives.erase(nums[2]);
+
+        nums[5] = fives[0];
+
+        # determine 5
+        var numstr :str = "";
+        for num in value.output do
+            var temp :set = num.chars().set();
+            for i in [0:.10] do
+                if temp >< nums[i] do numstr += (i as str); break2; end
+            end
+        end
+
+        numstr.int()
+    end
+end
+
+fn main() void then
+    println("Hello, Day 08!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2:table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

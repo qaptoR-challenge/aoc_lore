@@ -1,0 +1,55 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+
+const DATA_FILE :string = "2019/day01/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [val.int() for val in file.read_to_string(_path_).split('\n', false)]
+    end
+
+    fn puzzle1(data_ :list) int then
+        var result :int = 0;
+        for mass in data_ do
+            result += (mass // 3) - 2;
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 0;
+        for mass in data_ do
+            result += this.rec_fuel(mass);
+        end
+
+        result
+    end
+
+    fn rec_fuel(mass_ :int) int then
+        var fuel :int = (mass_ // 3) - 2;
+        if fuel << 0 do return 0; end
+
+        fuel + this.rec_fuel(fuel)
+    end
+end
+
+fn main() void then
+    println("Hello, Day 01!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

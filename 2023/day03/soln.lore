@@ -1,0 +1,107 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using std.regex as re;
+using std.vec;
+
+const DATA_FILE :string = "2023/day03/data.txt";
+const DIRS :list = [
+    (0, 1), (1, 0), (0, -1), (-1, 0),
+    (1, 1), (-1, 1), (-1, -1), (1, -1),
+];
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        file.read_to_string(_path_).split("\n", false)
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        var nums :list = [];
+        var syms :list = [];
+
+        for i, line in data then
+            var nrems := re.find_all(`(\d+)`, line);
+            var srems := re.find_all(`([^.\d])`, line);
+
+            for nrem in nrems then nums.append(( i, nrem.start(1), nrem.end(1) -1, nrem[1] )); end
+            for srem in srems then syms.append(( i, srem.start(1) )); end
+        end
+
+        var valid :set = {};
+        for sym in syms then
+            var loc :tuple = (sym.y, sym.x);
+            for n in nums then
+                if valid.has(n) do continue; end
+                for dir in DIRS then
+                    var nloc = vec.add(loc, dir);
+                    if nloc.y <> n.x do continue; end
+                    if nloc.x < n.y ior n.z < nloc.x do continue; end
+                    valid.add(n);
+        end end end
+
+        for num in valid do result += num.w.int(); end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+        var nums :list = [];
+        var syms :list = [];
+
+        for i, line in data then
+            var nrems := re.find_all(`(\d+)`, line);
+            var srems := re.find_all(`([^.\d])`, line);
+
+            for nrem in nrems then nums.append(( i, nrem.start(1), nrem.end(1) -1, nrem[1] )); end
+            for srem in srems then syms.append(( i, srem.start(1), srem[1] )); end
+        end
+
+        var valid :table = {:};
+        for sym in syms then
+            if sym.z <> '*' do continue; end
+            var loc :tuple = (sym.y, sym.x);
+            valid[sym] = {};
+            for num in nums then
+                if valid[sym].has(num) do continue; end
+                for dir in DIRS then
+                    var nloc = vec.add(loc, dir);
+                    if nloc.y <> num.x do continue; end
+                    if nloc.x < num.y ior num.z < nloc.x do continue; end
+                    valid[sym].add(num);
+        end end end
+
+        for _, val in valid then
+            if val.len <> 2 do continue; end
+            var ratio :int = 1;
+            for num in val do ratio *= num.w.int(); end
+            result += ratio;
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 03!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

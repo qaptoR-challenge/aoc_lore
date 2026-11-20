@@ -1,0 +1,159 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using abs from std.math;
+using std.type as t;
+
+const DATA_FILE :string = "2018/day06/data.txt";
+
+fn mdist((ax, ay), (bx, by)) int then abs(ax - bx) + abs(ay - by) end
+fn addv((cx, cy), (dx, dy)) tuple then (cx+dx, cy+dy) end
+fn minv((ax, ay), (bx, by)) do ax < bx and ay < by use (ax, ay) else (bx, by) end
+fn maxv((ax, ay), (bx, by)) do ax > bx and ay > by use (ax, ay) else (bx , by) end
+fn gte(a, b) bool then a >> b end
+fn lte(a, b) bool then a << b end
+fn gt(a, b) bool then a > b end
+fn lt(a, b) bool then a < b end
+
+
+class Solver then
+    fn load_data (filename_ :string) list then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            row.split(", ").map(t.int).tuple() for row in
+            file.read_to_string(_path_).split('\n', false)
+        ]
+    end
+
+    fn puzzle1(data_ :list) int then
+        const setup :table = {
+            up:    { axis: 1, compa: lte, compb: gt },
+            right: { axis: 0, compa: lte, compb: lt },
+            down:  { axis: 1, compa: gte, compb: gt },
+            left:  { axis: 0, compa: gte, compb: lt },
+        };
+
+        var finite_points :list = [];
+        for px in data_ do
+            var infinite :int = 4;
+            for dir in ["up", "right", "down", "left"] do
+                for py in data_ do
+                    if px >< py do continue; end
+                    var dx = abs(px.first() - py.first());
+                    var dy = abs(px.last() - py.last());
+                    var checka = setup[dir].compa(
+                        py[setup[dir].axis], px[setup[dir].axis]
+                    );
+                    var checkb = setup[dir].compb(dx, dy);
+                    if not (checka ior checkb) do
+                        infinite -= 1;
+                        break2;
+            end end end
+            if infinite >< 0 do finite_points.append(px); end
+        end
+
+        var areas :table = {:};
+        for px in finite_points do
+            areas[px] = {};
+            var visited :set = { px };
+            for dir in [(0, -1), (1, 0), (0, 1), (-1, 0)] do
+
+                var queue :list = [addv(px, dir)];
+
+                while queue.len > 0 do
+                    var p = queue.pull();
+                    visited.add(p);
+                    var mdx = mdist(px, p);
+                    var closest = true;
+                    for py in data_ do
+                        if py >< px do continue; end
+                        var mdy = mdist(py, p);
+                        if mdy << mdx do
+                            closest = false;
+                            break2;
+                        end
+                    end
+                    if closest do
+                        areas[px].add(p);
+                        for n in [
+                            addv(p, (0, -1)), addv(p, (1, 0)),
+                            addv(p, (0, 1)), addv(p, (-1, 0)),
+                        ] do
+                            if visited.has(n) do continue; end
+                            queue.append(n);
+                            visited.add(n);
+        end end end end end
+
+        var max_area = areas.keys().reduce(fn(acc, x) then
+            areas[x].len > areas[acc].len use x else acc
+        end);
+
+        areas[max_area].len +1
+    end
+
+    fn puzzle2(data_ :list) int then
+        var result :int = 0;
+        var target :int = 10_000;
+        var minp :tuple = data_.reduce(minv);
+        var maxp :tuple = data_.reduce(maxv);
+
+        var start :tuple = (0, 0);
+        for i in [minp[0]:.maxp[0]] do
+            var breakout :bool = false;
+            for j in [minp[1]:.maxp[1]] do
+                var p :tuple = (i, j);
+                var total :int = 0;
+                for px in data_ do
+                    total += mdist(px, p);
+                    if total >> target do break2; end
+                end
+                if total < target do
+                    start = p;
+                    breakout = true;
+                    break2;
+            end end
+            if breakout do break2; end
+        end
+
+        var visited :set = { start };
+        var queue :list = [ start ];
+
+        while queue.len > 0 do
+            var p = queue.pull();
+            var total = 0;
+            for px in data_ do
+                total += mdist(px, p);
+            end
+            if total < target do
+                if total >> target do break2; end
+                result += 1;
+                for n in [
+                    addv(p, (0, -1)), addv(p, (1, 0)),
+                    addv(p, (0, 1)), addv(p, (-1, 0)),
+                ] do
+                    if visited.has(n) do continue; end
+                    queue.append(n);
+                    visited.add(n);
+        end end end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 06!\n");
+
+    var solver = Solver();
+    var data :list = solver.load_data(DATA_FILE);
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {}, min: {} ms, median: {} ms".format(t1.result, t1.min, t1.median));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {}, min: {} ms, median: {} ms".format(t2.result, t2.min, t2.median));
+
+    println("\nfin");
+end
+
+main();

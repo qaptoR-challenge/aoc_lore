@@ -1,0 +1,68 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.parse.json as json;
+using std.parse.yaml as yaml;
+
+const DATA_FILE :string = "2020/day06/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        {
+            i: {
+                j: person
+                for j, person in group.split('\n', false)
+            }
+            for i, group in file.read_to_string(_path_).split("\n\n", false)
+        }
+    end
+
+    fn puzzle1(data_ :table) int then
+        var result :int = 0;
+        println(data_.fprint());
+        for _, persons in data_ do
+            var answered :set = {};
+            for _, questions in persons do for question in questions do
+                answered.add(question);
+            end end
+            result += answered.len;
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :table) int then
+        var result :int = 0;
+        for i, persons in data_ do
+            var answered :table = {:};
+            for j, questions in persons do for question in questions do
+                answered[question] = answered.get(question, 0) +1;
+            end end
+            result += answered.keys().reduce(fn(a, e) int then
+                (answered[e] >< persons.len use 1 else 0) + a
+            end, 0);
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 06!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

@@ -1,0 +1,83 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.regex as re;
+
+const DATA_FILE :string = "2020/day08/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) table then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+
+        { ops: [
+            do if rem :re_match = re.find(`(nop|acc|jmp) ([+-][0-9]+)`, line) do
+                break2 { op: rem[1], arg: rem[2].int() };
+            end end
+            for line in file.read_to_string(_path_).split("\n", false)
+        ]}
+    end
+
+    fn puzzle1(data_ :table) int then
+        var result :int = 0;
+        var visited :set = {};
+        var ip :int = 0;
+        while true do
+            if visited.has(ip) do break2; end
+            visited.add(ip);
+            ip += match data_.ops[ip].op then
+                "nop" do 1 end
+                "acc" do result += data_.ops[ip].arg; 1 end
+                "jmp" do data_.ops[ip].arg end
+            end;
+        end
+
+        result
+    end
+
+    fn puzzle2(data_ :table) int then
+        var result :int = 0;
+
+        var swapped :table = { nop: "jmp", jmp: "nop" };
+        var swaps :list = [ i for i in [0:.data_.ops.len] if swapped.has(data_.ops[i].op) ];
+
+        for swap in swaps do
+            result = 0;
+            var copy = data_.copy(true);
+            copy.ops[swap].op = swapped[copy.ops[swap].op];
+            var visited :set = {};
+
+            var ip :int = 0;
+            while true do
+                if visited.has(ip) do break2; end
+                visited.add(ip);
+                ip += match copy.ops[ip].op then
+                    "nop" do 1 end
+                    "acc" do result += copy.ops[ip].arg; 1 end
+                    "jmp" do copy.ops[ip].arg end
+                end;
+                if ip >< copy.ops.len do break3; end
+            end
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 08!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2 :table = time.bench(fn() then solver.puzzle2(t0.result) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

@@ -1,0 +1,160 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.math;
+using std.regex as re;
+# extra
+using int from std.type;
+
+const DAY :str = "07";
+const DATA_FILE :str = "2023/day%s/data.txt" %DAY;
+
+const STRENGTH1 :str = "AKQJT98765432";
+const STRENGTH2 :str = "AKQT98765432J";
+
+enum Type then
+    FIVE_OAK,
+    FOUR_OAK,
+    FULL_HOUSE,
+    THREE_OAK,
+    TWO_PAIR,
+    ONE_PAIR,
+    HIGH_CARD,
+end
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var data :table = {:};
+        for line in file.read_to_string(_path_).split("\n", false) then
+            var parts :list = line.split(" ", false);
+            data[parts[0]] = {
+                bid: parts[1].int(),
+                score: this.get_score(parts[0]),
+            };
+        end
+
+        data
+    end
+
+    fn puzzle1(data) int then
+        var comp_scores = fn(a, b) bool then
+            var sa = data[a].score;
+            var sb = data[b].score;
+            if sa.type1 <> sb.type1 then
+                return sa.type1 > sb.type1;
+            end
+            var st1 = sa.strength1;
+            var st2 = sb.strength1;
+            for i in [0:.5] then
+                if st1[i] >< st2[i] do continue; end
+                return st1[i] > st2[i];
+            end
+
+            false
+        end;
+
+        var hands :list = data.keys();
+        hands.sorts_by(comp_scores);
+
+        var result :int = 0;
+        for i, hand in hands do result += data[hand].bid * (i+1); end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var comp_scores = fn(a, b) bool then
+            var sa = data[a].score;
+            var sb = data[b].score;
+            if sa.type2 <> sb.type2 then
+                return sa.type2 > sb.type2;
+            end
+            var st1 = sa.strength2;
+            var st2 = sb.strength2;
+            for i in [0:.5] then
+                if st1[i] >< st2[i] do continue; end
+                return st1[i] > st2[i];
+            end
+
+            false
+        end;
+
+        var hands :list = data.keys();
+        hands.sorts_by(comp_scores);
+
+        var result :int = 0;
+        for i, hand in hands do result += data[hand].bid * (i+1); end
+
+        result
+    end
+
+    fn get_score(hand :str) table then
+        var stren1 :list = [];
+        var stren2 :list = [];
+        var cards :table = {:};
+        for card in hand do
+            cards[card] = cards.get(card, 0) + 1;
+            stren1.append(STRENGTH1.find(card));
+            stren2.append(STRENGTH2.find(card));
+        end
+
+        var type1 :Type = match cards.len then
+            1 do .FIVE_OAK end
+            2 do cards.values().has(4) use .FOUR_OAK else .FULL_HOUSE end
+            3 do cards.values().has(3) use .THREE_OAK else .TWO_PAIR end
+            4 do .ONE_PAIR end
+            5 do .HIGH_CARD end
+        end;
+
+        var type2 :Type = match type1 then
+            .FIVE_OAK do .FIVE_OAK end
+            .FOUR_OAK do cards.has('J') use .FIVE_OAK else .FOUR_OAK end
+            .FULL_HOUSE do cards.has('J') use .FIVE_OAK else .FULL_HOUSE end
+            .THREE_OAK do cards.has('J') use .FOUR_OAK else .THREE_OAK end
+            .HIGH_CARD do cards.has('J') use .ONE_PAIR else .HIGH_CARD end
+
+            .TWO_PAIR do
+                if not cards.has('J') then .TWO_PAIR
+                elif cards.J >< 1 then .FULL_HOUSE
+                else .FOUR_OAK end
+            end
+
+            .ONE_PAIR do
+                if not cards.has('J') then .ONE_PAIR
+                else .THREE_OAK end
+            end
+        end;
+
+        {
+            strength1: stren1,
+            strength2: stren2,
+            cards: cards,
+            type1: type1 as int,
+            type2: type2 as int,
+        }
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .ms);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

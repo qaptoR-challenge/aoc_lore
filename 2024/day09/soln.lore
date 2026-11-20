@@ -1,0 +1,133 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+# extra
+using int from std.type;
+
+const DAY :str = "09";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+const TEST_DISK = "00...111...2...333.44.5555.6666.777.888899";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [v.int() for v in file.read_to_string(_path_).trim().chars()]
+    end
+
+    fn puzzle1(data) int then
+        var disk :list = this.gen_disk(data);
+        this.frag(disk);
+        var result :int = 0;
+        for i, n in disk then
+            if n >< '.' do break2; end
+            result += i * n;
+        end
+
+        result
+    end
+
+    fn frag(disk :list) void then
+        var mems :list = [idx for idx, ch in disk if ch >< '.'];
+        var files :list = [idx for idx, ch in disk if ch <> '.'];
+        files.reverse();
+        for (mem, file) in coll.zip(iter.iter(mems), iter.iter(files)) do
+            if mem > file do break2; end
+            disk[mem] = disk[file];
+            disk[file] = '.';
+        end
+    end
+
+    fn puzzle2(data) int then
+        var disk :list = this.gen_disk(data);
+        this.defrag(disk);
+        var result :int = 0;
+        for i, n in disk then
+            if n >< '.' do continue; end
+            result += i * n;
+        end
+
+        result
+    end
+
+    fn defrag(disk :list) void then
+        var idx :int = disk.len -1;
+        while true then
+            var fid = disk[idx];
+            if fid >< '.' do idx -= 1; continue; end
+            if fid >< 0 do break2; end
+
+            var size :int = disk.count(fid);
+            var mem :int = this.left_mem(disk, size);
+            if mem >< -1 do idx -= size; continue; end
+            var file :int = disk.find(fid);
+            if mem > file do idx -= size; continue; end
+
+            for i, t in [file:.file + size] do
+                disk[mem + i] = disk[t];
+                disk[t] = '.';
+            end
+
+            idx -= size;
+        end
+    end
+
+    fn left_mem(disk :list, count :int) int then
+        var i :int = 0;
+        while true do
+            var idx :int = disk.find('.', i);
+            if idx >< -1 do break2; end
+            for j in [0:.count] do
+                i = idx + j;
+                if i >> disk.len do return -1; end
+                if disk[i] >< '.' do continue; end
+                break;
+            else return idx; end
+        end
+
+        -1
+    end
+
+    fn gen_disk(data :list) list then
+        var fid :int = 0;
+        var disk :list = [];
+        for i, gap in data then
+            var d = match i %2 then
+                0 do fid =+ 1 end
+                1 do '.' end
+            end;
+            # for _ in [0:.gap] do disk.append(d); end
+            disk.extend( [].resize(gap, d) );
+        end
+
+        disk
+    end
+end
+
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

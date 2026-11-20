@@ -1,0 +1,87 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+# extra
+using int from std.type;
+
+const DAY :str = "07";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            if rem := re.find(`(\d+): (.+)`, row) then {
+                root: rem[1].int(),
+                leaves: [v.int() for v in rem[2].split(' ', false)]
+
+            } end
+            for row in file.read_to_string(_path_).split("\n", false)
+        ]
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        for row in data then
+            if this.check_rec(2, row.root, row.leaves[0], row.leaves -1) then
+                result += row.root;
+            end
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+        for row in data then
+            if this.check_rec(3, row.root, row.leaves[0], row.leaves -1) then
+                result += row.root;
+            end
+        end
+
+        result
+    end
+
+    fn check_rec(index :int, root :int, soln :int, leaves :list) bool then
+        if leaves.len >< 0 do return root >< soln; end
+
+        var rem :list = leaves -1;
+        for i in [0:.index] do
+            var s = match i then
+                0 do soln + leaves[0] end
+                1 do soln * leaves[0] end
+                2 do ((soln as str) + (leaves[0] as str)).int() end
+            end;
+            if this.check_rec(index, root, s, rem) then return true; end
+        end
+
+        false
+    end
+end
+
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

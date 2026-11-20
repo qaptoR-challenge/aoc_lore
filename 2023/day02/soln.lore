@@ -1,0 +1,86 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using std.regex as re;
+using std.vec;
+
+const DATA_FILE :string = "2023/day02/data.txt";
+const BAG :table = { red: 12, green: 13, blue: 14, };
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+
+        var data :table = {:};
+        for line in file.read_to_string(_path_).split("\n", false) then
+            var parts :list = line.split(": ", false);
+            var gameid :int = re.find(`\d+`, parts[0]).?[0].int();
+
+            data[gameid] = {:};
+            var hands :list = parts[1].split("; ", false);
+            for i, hand in hands then
+                var rems :list = re.find_all(`(\d+) (\w+)(?:, )?`, hand);
+                for rem in rems then
+                    data[gameid].getadd(i, []).append({
+                        color: rem[2], count: rem[1].int()
+                    });
+        end end end
+
+        data
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        for id, game in data then
+            for hand in game.values() then
+                for color in hand then
+                    if color.count > BAG[color.color] do break3; end
+                end
+            else result += id; end
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+
+        for game in data.values() then
+            var powerset :table = { red: [], blue: [], green: [], };
+            for hand in game.values() then
+                for color in hand then powerset[color.color].append(color.count); end
+            end
+
+            var power :int = 1;
+            for counts in powerset.values() then
+                power *= counts.reduce(math.max);
+            end
+
+            result += power;
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day 02!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

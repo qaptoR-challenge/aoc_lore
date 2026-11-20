@@ -1,0 +1,65 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using batched from std.iter;
+
+const DATA_FILE :string = "2022/day03/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        file.read_to_string(_path_).split("\n", false)
+    end
+
+    fn puzzle1(data_) int then
+        var result :int = 0;
+        for pack in data_ do
+            var mid :int = pack.len // 2;
+            var sec1 = pack[0:.mid];
+            var sec2 = pack[mid:.pack.len];
+            for char in sec1 do if sec2.has(char) then
+                result += this.get_priority(char); break2;
+        end end end
+
+        result
+    end
+
+    fn puzzle2(data_) int then
+        var result :int = 0;
+        for (a, b, c) in batched(data_, 3) do
+            for chr in a do
+                if  b.has(chr) and c.has(chr) then
+                    result += this.get_priority(chr); break2;
+        end end end
+
+        result
+    end
+
+    fn get_priority(chr :str) int then
+        var uni = chr.lower().uni();
+        var p = uni - 0x60;
+        if chr.lower() <> chr do p += 26; end
+
+        p
+    end
+end
+
+fn main() void then
+    println("Hello, Day 03!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2:table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

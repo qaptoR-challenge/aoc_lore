@@ -1,0 +1,101 @@
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+using std.math;
+using std.regex as re;
+
+const DATA_FILE :string = "2022/day07/data.txt";
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+
+        var cd_re :str = `\$ cd ([a-z/.]+)`;
+        var ls_re :str = `\$ ls`;
+        var file_re :str = `(\d+) ([a-z.]+)`;
+        var dir_re :str = `dir ([a-z]+)`;
+
+        var data :table = {:};
+        var stack :list = [];
+        var template :table = { dirs: [], files: [] };
+
+        for line in file.read_to_string(_path_).split("\n", false) then
+            for i, opt in [cd_re, ls_re, file_re, dir_re] then
+                var rem :re_match = re.find(opt, line);
+                if not rem do continue; end
+                var path :str = '/'.join(stack);
+                match i then
+                    0 do match rem.?[1] then
+                        ".." do stack.pop(); end
+                        "/" do stack = ['/']; end
+                        _ do stack.append(rem.?[1]); end
+                    end end
+
+                    1 do data.getadd(path, template.copy(true)); end
+
+                    2 do data[path].files.append({
+                            name: rem.?[2], size: rem.?[1].int()
+                    }); end
+
+                    3 do data[path].dirs.append('/'.joinv(path, rem.?[1])); end
+        end end end
+
+        data
+    end
+
+    fn puzzle1(data_) int then
+        var result :int = 0;
+        var memo :table = {:};
+
+        for dir in data_ do
+            var size :int = 0;
+            if memo.has(dir) then size = memo[dir];
+            else size = this.rec_size(data_, dir, memo); end
+
+            if size << 100_000 then result += size; end
+        end
+
+        result
+    end
+
+    fn puzzle2(data_) int then
+        var total_mem :int = 70_000_000;
+        var target_mem :int = 30_000_000;
+
+        var memo :table = {:};
+        var size :int = this.rec_size(data_, '/', memo);
+        var goal_mem :int = target_mem - (total_mem - size);
+
+        var dirs :list = memo.values().filter(fn(e) do e >> goal_mem end);
+
+        dirs.reduce(math.min)
+    end
+
+    fn rec_size(data :table, dir :str, memo :table) int then
+        var size :int = 0;
+        for file in data[dir].files do size += file.size; end
+        for subdir in data[dir].dirs do size += this.rec_size(data, subdir, memo); end
+
+        memo[dir] = size;
+        size
+    end
+end
+
+fn main() void then
+    println("Hello, Day 07!\n");
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var t1 :table = time.bench(fn() then solver.puzzle1(t0.result.copy(true)) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    var t2:table = time.bench(fn() then solver.puzzle2(t0.result.copy(true)) end, 1, 300, .ms);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();
