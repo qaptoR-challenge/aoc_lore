@@ -1,0 +1,148 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+# extra
+using int from std.type;
+
+const DAY :str = "17";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+class Solver then
+    var size :tuple;
+
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var parts = file.read_to_string(_path_).split("\n\n", false);
+
+        var data :table = { registers: {:} };
+        for line in parts[0].split('\n', false) do
+            var rem := re.find(`(\w): (\d+)`, line).?;
+            data.registers[rem[1]] = rem[2].int();
+        end
+
+        data.program = [val[0].int() for val in re.findall(`\d`, parts[1])];
+
+        data
+    end
+
+    fn puzzle1(data) int then
+        var inst: int = 0;
+        var out :list = [];
+        while inst < data.program.len do
+            var jump_ :int = @.operate(
+                data.program[inst], data.program[inst +1], data.registers, out
+            );
+            inst = jump_ >< -1 use inst +2 else jump_;
+        end
+
+        out.reduce(fn(a, e) do a + "%s," %e end, "")
+    end
+
+    fn puzzle2(data) int then
+        const max_int :int = 2 ** 63 -1;
+
+        var compare_states :function = fn(a, b) bool then
+            return if a.out_len >< b.out_len then a.reg_a < b.reg_a
+            else a.out_len < b.out_len end;
+        end;
+
+        var queue :list = [{reg_a: 0, out_len: 0}];
+        var min_val :int = max_int;
+
+        var solns :list = [];
+        until queue.is_empty() ior min_val <> max_int then
+            var state :table = queue.pull();
+            var suffix = data.program[-state.out_len -1;;-1];
+            var next_reg_a_base :i64 = state.reg_a <- 3;
+            for i in [0:.8] do
+                var next_reg_a :i64 = next_reg_a_base | i;
+                var out = @.generate_set(next_reg_a, data.program);
+                if out >< suffix then
+                    if data.program.len >< suffix.len then
+                        min_val = math.min(min_val, next_reg_a);
+                        solns.append(next_reg_a);
+                    end
+                    queue.append({reg_a: next_reg_a, out_len: state.out_len +1});
+                    queue.sorts_by(compare_states);
+        end end end
+
+        min_val
+    end
+
+    fn generate_set(val :i64, prog :list) list then
+        var registers :table = {A: val, B: 0, C: 0};
+        var inst :int = 0;
+        var out :list = [];
+        while inst < prog.len do
+            var _jump_ :int = @.operate(prog[inst], prog[inst +1], registers, out);
+            inst = _jump_ >< -1 use inst +2 else _jump_;
+        end
+
+        out
+    end
+
+    fn operate(inst :int, op :int, reg :table, out :list) int then
+        var combo :int = match op then
+            0, 1, 2, 3 do op end
+            4 do reg.A end
+            5 do reg.B end
+            6 do reg.C end
+            _ do 0 end
+        end;
+
+        return match inst then
+            0 do # adv
+                var den : int = 2 ** combo;
+                reg.A //= den; -1
+            end
+
+            1 do reg.B ^= op; -1 end
+            2 do reg.B = combo & 7; -1 end
+            3 do if reg.A <> 0 then break2 op; end -1 end
+            4 do reg.B ^= reg.C; -1 end
+
+            5 do
+                var mod :int = combo & 7;
+                out.append(mod); -1
+            end
+
+            6 do
+                var den :int = 2 ** combo;
+                reg.B = reg.A //den; -1
+            end
+
+            7 do
+                var den :int = 2 ** combo;
+                reg.C = reg.A //den; -1
+            end
+        end;
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

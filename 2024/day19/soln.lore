@@ -1,0 +1,75 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+using std.type;
+# extra
+
+const DAY :str = "19";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+class Solver then
+    var cache :table = {:};
+
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var parts :list = file.read_to_string(_path_).split("\n\n", false);
+        {
+            towels: parts[0].split(", ", false),
+            patterns: parts[1].split("\n", false),
+        }
+    end
+
+    fn puzzle1(data) int then
+        data.patterns.reduce(fn(count, pattern) int then
+            var new_count = @.process(pattern, data.towels);
+            count + (new_count > 0 use 1 else 0)
+        end, 0)
+    end
+
+    fn puzzle2(data) int then
+        data.patterns.reduce(fn(count, pattern) int then
+            count + @.process(pattern, data.towels)
+        end, 0)
+    end
+
+    fn process(pattern :str, towels :list) int then
+        if pattern.len >< 0 do return 1; end
+        if @.cache.has(pattern) do return @.cache[pattern]; end
+        var matched = towels.filter(pattern.starts_with);
+        if matched.len >< 0 then
+            return @.cache.getadd(pattern, 0);
+        end
+
+        @.cache.getadd(pattern, matched.reduce(fn(count, towel) int then
+            count + @.process(pattern[towel.len;;-1], towels)
+        end, 0))
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .us);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

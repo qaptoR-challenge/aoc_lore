@@ -1,0 +1,79 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+using std.type;
+# extra
+using std.search;
+
+const DAY :str = "18";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+class Solver then
+    var size :tuple;
+
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            row.split(',', false).map(type.int).tuple()
+            # (x.int(), y.int())
+            for row in file.read_to_string(_path_).split("\n", false)
+            # for (x, y) in [row.split(',', false)]
+        ]
+    end
+
+    fn puzzle1(data) int then
+        var grid = search.AStarGrid2D({size: (71, 71), diagonal_mode: "never"});
+        for (x, y) in data[0:.1024] do
+            grid.fill_solid_region((x, y, 1, 1), true);
+        end
+
+        grid.get_id_path((0, 0), (70, 70)).len -1
+    end
+
+    fn puzzle2(data) str then
+        var result :str = "";
+        var grid = search.AStarGrid2D({size: (71, 71), diagonal_mode: "never"});
+
+        for (x, y) in data[0:.1024] do
+            grid.fill_solid_region((x, y, 1, 1), true);
+        end
+
+        for (x, y) in data[1024;;-1] do
+            grid.fill_solid_region((x, y, 1, 1), true);
+            var path :list = grid.get_id_path((0, 0), (70, 70));
+            if not path.has((70, 70)) then
+                result = "%s,%s" %[x, y];
+                break2;
+        end end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .us);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

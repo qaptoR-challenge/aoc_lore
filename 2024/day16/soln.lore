@@ -1,0 +1,190 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+# extra
+using int from std.type;
+
+const DAY :str = "16";
+const DATA_FILE :str = "2024/day%s/data.txt" %DAY;
+
+const LEFT_TURN :tuple = ((0, 1), (-1, 0));
+const RIGHT_TURN :tuple = ((0, -1), (1, 0));
+
+fn mat_mul(m :tuple, v :tuple) tuple then
+    (vec.dot(m.x, v), vec.dot(m.y, v))
+end
+
+class Solver then
+    var size :tuple;
+
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        file.read_to_string(_path_).split("\n", false)
+    end
+
+    fn puzzle1(data) int then
+        var map :table = {:};
+        var _start_ :tuple = (0, 0);
+        var _end_ :tuple = (0, 0);
+
+        for y, row in data do
+            for x, ch in row.chars() do
+                if ch >< 'E' do _end_ = (x, y); end
+                if ch >< 'S' do _start_ = (x, y); end
+                map[(x, y)] = ch;
+        end end
+
+        var dir :tuple = (1, 0);
+
+        return @.dijkstra(map, _start_, _end_, dir)[0][_end_];
+    end
+
+    fn puzzle2(data) int then
+        var map :table = {:};
+        var _start_ :tuple = (0, 0);
+        var _end_ :tuple = (0, 0);
+
+        for y, row in data do
+            for x, ch in row.chars() do
+                if ch >< 'E' do _end_ = (x, y); end
+                if ch >< 'S' do _start_ = (x, y); end
+                map[(x, y)] = ch;
+        end end
+
+        var dir :tuple = (1, 0);
+        var dicts = @.dijkstra(map, _start_, _end_, dir);
+        dicts.append(map);
+
+        @.traverse_best_paths(dicts, _start_, _end_)
+    end
+
+    fn dijkstra(map :table, start_ :tuple, end_ :tuple, dir :tuple) list then
+        var dists :table = {:};
+        var prevs :table = {:};
+        var visited :set = {};
+        var queue :list = [];
+
+        for node, ch in map do
+            if ch >< '#' do continue; end
+            dists[node] = (2 ** 63) -1;
+            prevs[node] = null;
+        end
+
+        dists[start_] = 0;
+
+        queue.append((start_, dir, 0));
+        while queue.len > 0 do
+            queue.sorts_by(fn(a, b) do a.z < b.z end);
+            var (curr_pos, curr_dir, curr_dist) = queue.pull();
+            if curr_pos >< end_ do break2; end
+
+            if visited.hasadd(curr_pos) do continue; end
+
+            for n in @.neighbors(map, curr_pos, curr_dir) do
+                if visited.has(n.x) do continue; end
+                var distance :int = curr_dist + n.z;
+                if distance < dists[n.x] then
+                    dists[n.x] = distance;
+                    prevs[n.x] = curr_pos;
+                    queue.append((n.x, n.y, distance));
+            end end
+        end
+
+        [dists, prevs]
+    end
+
+    fn neighbors(map :table, node :tuple, dir_ :tuple) tuple then
+        var neighbors :list = [];
+        var look_at :tuple = vec.add(node, dir_);
+        if map.has(look_at) and map[look_at] <> '#' then
+            neighbors.append((look_at, dir_, 1));
+        end
+
+        for t, turn in [LEFT_TURN, RIGHT_TURN] do
+            var dir :tuple = dir_;
+            var count :int = 0;
+            for _ in [0:.2 -t] do
+                count += 1000;
+                dir = mat_mul(turn, dir);
+                look_at = vec.add(node, dir);
+                if map.has(look_at) and map[look_at] <> '#' then
+                    neighbors.append((look_at, dir, count +1));
+        end end end
+
+        neighbors
+    end
+
+    fn traverse_best_paths(dicts :table, start_ :tuple, end_ :tuple) int then
+        var juncts :list = [];
+        var best_nodes :set = {};
+        var visited :list = [];
+
+        var current :tuple = end_;
+        var last_direction :tuple = (0, 0);
+
+        while true then
+            if current >< start_ then
+                if juncts.len() > 0 then
+                    current = juncts.pop();
+                    visited.append(current);
+                else break3; end
+            end
+
+            best_nodes.add(current);
+
+            var previous_best :tuple = dicts[1][current];
+            var curr_dir :tuple = vec.sub(current, previous_best);
+            best_nodes.add(previous_best);
+            var best_distance = dicts[0][previous_best];
+
+            for neighbor in @.junctions(dicts[2], current) do
+                var dir :tuple = vec.sub(current, neighbor);
+                if neighbor >< previous_best do continue; end
+                var distance = dicts[0][neighbor];
+                if dir>< last_direction then distance -= 1000; end
+                if distance >< best_distance then juncts.append(neighbor); end
+            end
+            current = previous_best;
+            last_direction = curr_dir;
+        end
+
+        best_nodes.len
+    end
+
+    fn junctions(map :table, node :tuple) list then
+        [
+            look_at
+            for look_at in [(1, 0), (-1, 0), (0, 1), (0, -1)].map(
+                fn(e) then vec.add(node, e) end
+            ) if map[look_at] <> '#'
+        ]
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .ms);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

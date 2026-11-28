@@ -1,0 +1,80 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+using std.type;
+# extra
+
+const DAY :str = "03";
+const DATA_FILE :str = "2025/day%s/data.txt" %DAY;
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            row.chars().map(type.int)
+            for row in file.read_to_string(_path_).split("\n", false)
+        ]
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+
+        for bank in data then
+            var left :int = bank[0;;-2].reduce(math.max);
+            var idx :int = bank.find(left);
+            var right :int = bank[idx,;-1].reduce(math.max);
+            result += left *10 + right;
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+        const LENGTH :int = 12;
+
+        for bank in data then
+            # var joltage :str = "";
+            var joltage :int = 0;
+            var idx :int = 0;
+            for i in [0:.LENGTH] do
+                var tail :int = 12 - i;
+                var head :int = i >< 0 use idx else idx +1;
+                var digit :int = bank[head;;-tail].reduce(math.max);
+                idx = bank.find(digit, head);
+                joltage = joltage *10 + digit;
+            end
+            result += joltage;
+        end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .us);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

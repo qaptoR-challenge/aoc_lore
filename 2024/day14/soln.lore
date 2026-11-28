@@ -52,9 +52,49 @@ class Solver then
     end
 
     fn puzzle2(data) int then
-        var result :int = 0;
+        var args :list = [
+            "-y", "-f", "rawvideo",
+            "-pixel_format", "gray",
+            "-video_size", "%dx%d" % [ROOM.x +1, ROOM.y +1],
+            "-framerate", "60",
+            "-i", "-",
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-crf", "18",
+            "day14.mp4"
+        ];
 
-        result
+        var proc := os.pipe_execute("ffmpeg", args, false);
+        if proc.is_empty() then
+            println("Failed to start ffmpeg");
+            return 0;
+        end
+
+        var zero :u8 = 0;
+        var frame :array = coll.array(FRAMES, zero);
+
+        for t in [0:.FRAMES] do
+            frame.fill(zero);
+            for r in data do
+                var x := (r.p.x + r.v.x * t) %% ROOM.x;
+                var y := (r.p.y + r.v.y * t) %% ROOM.y;
+                frame[y * ROOM.x + x] = 255;
+            end
+
+            proc.stdio.writebuf(frame);
+        end
+
+        proc.stdio.close();
+
+        var i :int = 0;
+        while os.is_process_running(proc.pid) do
+            println("waiting" + '.'**i);
+            time.sleep(1);
+            i += 1;
+        end
+        println("ffmpeg finished");
+
+        0
     end
 
     fn get_quadrant(pos :tuple) int then

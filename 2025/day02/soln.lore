@@ -1,0 +1,66 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+using std.type;
+# extra
+
+const DAY :str = "02";
+const DATA_FILE :str = "2025/day%s/data.txt" %DAY;
+
+class Solver then
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        [
+            row.split('-', false).map(type.int).tuple()
+            for row in file.read_to_string(_path_).split(",", false)
+        ]
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        for (s, e) in data do
+            for id in [s::e] do
+                if re.test(`^(\d+)\1$`, id as str) then result += id; end
+        end end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+        for (s, e) in data do
+            for id in [s::e] do
+                if re.test(`^(\d+)\1+$`, id as str) then result += id; end
+        end end
+
+        result
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .us);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    println("\nfin");
+end
+
+main();

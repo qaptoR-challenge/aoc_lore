@@ -1,0 +1,120 @@
+# default
+using println from std.io;
+using std.file;
+using std.os;
+using std.time;
+# usual
+using std.regex as re;
+using std.math;
+using std.vec;
+using std.iter;
+using std.coll;
+using std.type;
+# extra
+
+const DAY :str = "04";
+const DATA_FILE :str = "2025/day%s/data.txt" %DAY;
+
+const DIRS :list = [
+    (-1, -1), ( 1, -1), (-1,  0), (-1,  1),
+    ( 0, -1), ( 1,  0), ( 0,  1), ( 1,  1),
+];
+
+class Solver then
+    var input_data;
+
+    fn load_data (filename_ :string) then
+        var _path_ :str = '/'.join([os.cwd(), filename_]);
+        var data :str = file.read_to_string(_path_).split("\n", false);
+        @.input_data = data.utf8();
+        {
+            (x, y): ch
+            for y, row in data
+            for x, ch in row.chars()
+        }
+    end
+
+    fn puzzle1(data) int then
+        var result :int = 0;
+        for pos, ch in data do
+            if ch >< '.' do continue; end
+            if @.count_neighbors(data, pos) < 4 then result += 1; end
+        end
+
+        result
+    end
+
+    fn puzzle2(data) int then
+        var result :int = 0;
+
+        var queue :list = [];
+        while true do
+            queue.clear();
+            for pos, ch in data do
+                if ch >< '.' do continue; end
+                if @.count_neighbors(data, pos) < 4 then
+                    queue.append(pos);
+                    result += 1;
+                end
+            end
+            if queue.len >< 0 do break2; end
+            for pos in queue do data[pos] = '.'; end
+        end
+
+        result
+    end
+
+    fn puzzle3(data) int then
+        var result :int = 0;
+
+        var queue :list = [];
+        while true do
+            queue.clear();
+            for pos, ch in data do
+                if ch >< '.' do continue; end
+                if @.count_neighbors(data, pos) < 4 then
+                    queue.append(pos);
+                    result += 1;
+                end
+            end
+            if queue.len >< 0 do break2; end
+            for pos in queue do data[pos] = '.'; end
+        end
+
+        result
+    end
+
+    fn count_neighbors(data :table, pos :tuple) int then
+        var count :int = 0;
+        for dir in DIRS do
+            var d = data.get(vec.add(pos, dir));
+            if d >< '@'  then count += 1; end
+        end
+
+        count
+    end
+end
+
+fn main() void then
+    println("Hello, Day %s!\n" %DAY);
+
+    var solver = Solver();
+    var t0 :table = time.bench(fn() then solver.load_data(DATA_FILE) end, 1, 300, .us);
+    println("load data - min: {min} {unit}, median: {median} {unit}".format(t0));
+
+    var data := t0.result.copy(true);
+    var t1 :table = time.bench(fn() then solver.puzzle1(data) end, 1, 300, .us);
+    println("part 1: {result}, min: {min} {unit}, median: {median} {unit}".format(t1));
+
+    data = t0.result.copy(true);
+    var t2:table = time.bench(fn() then solver.puzzle2(data) end, 1, 300, .us);
+    println("part 2: {result}, min: {min} {unit}, median: {median} {unit}".format(t2));
+
+    data = t0.result.copy(true);
+    var t3:table = time.bench(fn() then solver.puzzle3(data) end, 1, 300, .us);
+    println("part 3: {result}, min: {min} {unit}, median: {median} {unit}".format(t3));
+
+    println("\nfin");
+end
+
+main();
